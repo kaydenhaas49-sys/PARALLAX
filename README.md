@@ -44,23 +44,13 @@ npm run preview
 
 The preview server also proxies GLM and local voice requests. Production files are written to `dist/`.
 
-## Local voice — Friday-inspired
+## Local voice
 
-PARALLAX has an original, feminine American-English voice profile inspired by the clear,
-composed, quick-thinking delivery of cinematic AI assistants. It is not a recreation of
-a movie character or actor.
+The active in-app voice service remains Kokoro for now. Its current voice is `bf_emma` (British English), with measured default delivery and a slightly quicker urgent setting. The server runs on CPU by default so it does not compete with the local GLM server for NVIDIA VRAM.
 
-- Local Kokoro-82M speech synthesis; no cloud TTS.
-- Default voice preset: Kokoro `af_nicole`.
-- Normal delivery: measured, at speed `0.92`.
-- Urgent delivery: faster and more concise, at speed `1.20`, selected from the conversation context.
-- The voice toggle beside the message field mutes or enables speech.
-- The voice server runs on CPU by default so it does not compete with GLM for GPU memory.
+### Install and run Kokoro
 
-### Install the local voice engine on Linux
-
-The voice engine uses a separate Python 3.12 environment so it does not modify the
-Python environments used by other projects.
+The voice engine uses its own Python 3.12 environment.
 
 ```bash
 sudo pacman -S espeak-ng
@@ -72,17 +62,41 @@ uv pip install --python .venv-tts/bin/python -r requirements-tts.txt
 Start the voice service in its own terminal:
 
 ```bash
-cd ~/Projects/PARALLAX
 npm run voice
 ```
 
-The first startup downloads the Kokoro model and the selected voice preset. After that,
-speech synthesis runs locally using the cached files. Keep this terminal running while
-using PARALLAX. In another terminal, start the web app with `npm run dev`.
+The first startup downloads the Kokoro model and selected voice preset. After that, synthesis uses the local cache. Keep this terminal running while using PARALLAX.
 
-The voice service binds only to `127.0.0.1:7861`. The Vite development and preview
-servers proxy speech requests to it. Set `PARALLAX_TTS_BASE_URL` in `.env` if you
-need a different local port or host.
+The service binds only to `127.0.0.1:7861`. Vite proxies speech requests to it. Set `PARALLAX_TTS_BASE_URL` in `.env` for a different local host or port.
 
-Kokoro's model is open-weight and Apache-2.0 licensed. See the
-[official Kokoro usage documentation](https://github.com/NVIDIA/kokoro).
+## Experimental original voice design
+
+PARALLAX now includes an **optional Qwen3-TTS VoiceDesign audition**. It creates an original synthetic voice from a written description; it does not use reference audio or imitate a named actor or fictional character. This is an audition tool only: it does not replace the active Kokoro service.
+
+The first audition is designed to test a composed feminine voice with a subtle Irish-English lilt, a clear mid-to-low register, deliberate pacing, and controlled emphasis. It generates one WAV containing neutral, informative, and alert lines so the delivery can be judged in context.
+
+### Set up the separate voice-design environment
+
+Use a separate Python 3.12 environment so Qwen's dependencies do not change Kokoro's environment:
+
+```bash
+uv python install 3.12
+uv venv --python 3.12 .venv-voice-design
+uv pip install --python .venv-voice-design/bin/python -r requirements-voice-design.txt
+```
+
+Run the first audition:
+
+```bash
+HF_HOME=/mnt/storage/models/huggingface npm run voice-design:audition
+```
+
+Qwen3-TTS downloads its 1.7B VoiceDesign model on first use. The default is CPU inference to keep the GLM model's GPU memory free; CPU generation will be slower. If you deliberately want to test CUDA while enough VRAM is free, run:
+
+```bash
+PARALLAX_VOICE_DEVICE=cuda:0 HF_HOME=/mnt/storage/models/huggingface npm run voice-design:audition
+```
+
+The WAV and a text file containing the exact voice description are saved under `voice-auditions/`. These outputs are ignored by Git. Listen to the WAV before changing the live TTS engine.
+
+The model's official instructions and voice-design API are documented in the [Qwen3-TTS repository](https://github.com/QwenLM/Qwen3-TTS). Qwen3-TTS is Apache-2.0 licensed.
