@@ -396,7 +396,11 @@ function makeOrbScene(host, modeRef) {
     const energy = mode.energy;
 
     heartMaterial.uniforms.uTime.value = time * mode.speed;
-    heartMaterial.uniforms.uEnergy.value = THREE.MathUtils.lerp(heartMaterial.uniforms.uEnergy.value, energy, 0.04);
+    heartMaterial.uniforms.uEnergy.value = THREE.MathUtils.lerp(
+      heartMaterial.uniforms.uEnergy.value,
+      energy + pointer.activity * 0.18,
+      0.04
+    );
     mode.colors.forEach((hex, i) => {
       nextColors[i].set(hex);
       colors[i].lerp(nextColors[i], 0.035);
@@ -412,7 +416,7 @@ function makeOrbScene(host, modeRef) {
     pointer.vx *= 0.88;
     pointer.vy *= 0.88;
     pointer.activity *= 0.91;
-    rotor.rotation.z += 0.075 * mode.speed * (1 + cursorActivity * 1.8) * (1 / 60);
+    rotor.rotation.z = time * 0.075 * mode.speed * (1 + cursorActivity * 1.8);
     rotor.rotation.y = Math.sin(time * 0.19) * 0.055 + pointer.x * 0.035;
     rotor.rotation.x = Math.cos(time * 0.17) * 0.035 + pointer.y * 0.025;
     bladeHolders.forEach((holder, i) => {
@@ -465,7 +469,6 @@ function makeOrbScene(host, modeRef) {
 
     keyLight.intensity = 42 + energy * 16 + cursorActivity * 18;
     coolRim.intensity = 28 + energy * 8 + cursorActivity * 12;
-    heartMaterial.uniforms.uEnergy.value += cursorActivity * 0.08;
     renderer.render(scene, camera);
   };
   animate();
