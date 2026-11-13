@@ -106,7 +106,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(500, {"error": "Kokoro produced no audio"})
                 return
 
-            pause = np.zeros(int(SAMPLE_RATE * 0.12), dtype=np.float32)
+            pause = np.zeros(int(SAMPLE_RATE * 0.22), dtype=np.float32)
             joined = []
             for index, chunk in enumerate(chunks):
                 if index:
