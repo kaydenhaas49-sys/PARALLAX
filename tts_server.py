@@ -18,7 +18,7 @@ import soundfile as sf
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("PARALLAX_TTS_PORT", "7861"))
 DEVICE = os.environ.get("PARALLAX_TTS_DEVICE", "cpu")
-DEFAULT_VOICE = "af_nicole"
+DEFAULT_VOICE = "af_kore"
 ALLOWED_VOICES = {
     "af_nicole", "af_heart", "af_aoede", "af_kore", "af_sarah",
     "af_jessica", "af_bella", "af_sky",
