@@ -42,7 +42,7 @@ npm run build
 npm run preview
 ```
 
-The preview server also proxies GLM locally. Production files are written to `dist/`.
+The preview server also proxies GLM and local voice requests. Production files are written to `dist/`.
 
 ## Local voice — Friday-inspired
 
