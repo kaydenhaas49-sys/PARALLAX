@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a lower-register, casual PARALLAX voice-design audition with Qwen3-TTS.
+"""Generate a much lower-pitched, casual PARALLAX voice-design audition with Qwen3-TTS.
 
 This is an original synthetic voice and conversational style. It does not use
 reference audio or imitate the user's personal voice or any named performer.
@@ -26,10 +26,13 @@ VOICE_DESCRIPTION = (
     "She can react with genuine amusement, mild disbelief, or an occasional "
     "exasperated 'seriously?' without sounding mean. Keep it spontaneous "
     "and laid-back, but still smart, capable, and dependable. Give her a "
-    "noticeably lower feminine speaking pitch: a grounded lower-mid register, "
-    "with a naturally full, clear, lightly resonant tone. Keep it feminine "
-    "and easy to understand, not artificially deep, gravelly, husky, or "
-    "booming. Avoid high-pitched brightness and upward, sing-song delivery. "
+    "distinctly low contralto speaking register, near the bottom of the natural "
+    "feminine voice range. The pitch should be immediately and unmistakably "
+    "lower than a typical feminine assistant voice, with a stable low-set "
+    "chest resonance and a naturally full, clear tone. Keep the sound "
+    "confidently feminine and intelligible, not masculine, gravelly, raspy, "
+    "or artificially booming. Do not drift into a mid or high register, "
+    "and avoid bright, chirpy, or sing-song delivery. "
     "This lower pitch must sound casual and matter-of-fact, not intimate, "
     "sultry, flirtatious, or seductive. Keep the accent lightly Irish-English, "
     "subtle and easy to understand. Speak at a relaxed conversational pace "
@@ -43,15 +46,15 @@ VOICE_DESCRIPTION = (
     "anyone's personal voice or any specific actor or fictional character."
 )
 AUDITION_TEXT = (
-    "Oh, morning. You're alive. Excellent start. Everything's online, "
-    "and somehow nothing's on fire. Let's keep it that way. "
-    "You've got a meeting in twenty minutes. I put the details on your "
-    "display because, let's be honest, you were probably going to forget. "
-    "Uh, tiny problem. There's a massive obstruction right in front of us. "
-    "We could turn left, or we could keep driving into it like absolute "
-    "geniuses. I'd vote left. "
-    "There. New route sorted. See? We're kind of a great team."
-)
+    "Right, the storm has changed direction. It's rolling straight over "
+    "the observatory, and the dome sensors are having a complete meltdown. "
+    "I've shut the outer shutters, rerouted the backup power, and saved "
+    "your telescope alignment. You're welcome. "
+    "The good news is the equipment is fine. The bad news is that little "
+    "warning light is still blinking, and I'm fairly sure it's mocking us. "
+    "Give me a second... there. False alarm. Just a wet sensor. "
+    "Honestly, all this drama for one bit of rain. What a load of shit."
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,10 +64,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("voice-auditions/parallax-qwen3-voice-design-v5.wav"),
+        default=Path("voice-auditions/parallax-qwen3-voice-design-v6.wav"),
         help=(
             "WAV output path "
-            "(default: voice-auditions/parallax-qwen3-voice-design-v5.wav)"
+            "(default: voice-auditions/parallax-qwen3-voice-design-v6.wav)"
         ),
     )
     parser.add_argument(
@@ -131,7 +134,7 @@ def main() -> int:
         attn_implementation="sdpa",
     )
 
-    print("Designing the lower-register PARALLAX v5 audition...", flush=True)
+    print("Designing the much-lower-register PARALLAX v6 audition...", flush=True)
     wavs, sample_rate = model.generate_voice_design(
         text=AUDITION_TEXT,
         language="English",
@@ -146,7 +149,7 @@ def main() -> int:
     sf.write(args.output, wavs[0], sample_rate)
     sidecar = args.output.with_suffix(".txt")
     sidecar.write_text(
-        "PARALLAX original voice-design audition — version 5\n"
+        "PARALLAX original voice-design audition — version 6\n"
         f"Model: {MODEL_ID}\n"
         f"Device: {device}\n"
         f"Seed: {args.seed}\n"
