@@ -2,354 +2,267 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 const MODES = {
-  standby: { speed: 0.34, energy: 0.34, palette: ["#24527b", "#58d9ed", "#e8fbff"] },
-  listening: { speed: 0.72, energy: 0.72, palette: ["#176d83", "#4ce8ef", "#efffff"] },
-  thinking: { speed: 0.96, energy: 0.94, palette: ["#453b91", "#8d8aff", "#f0eaff"] },
-  speaking: { speed: 0.82, energy: 0.82, palette: ["#24528d", "#65bfff", "#f0faff"] },
+  standby: { speed: 0.28, energy: 0.34, colors: ["#173d55", "#42d6e7", "#e7fbff"] },
+  listening: { speed: 0.58, energy: 0.68, colors: ["#145468", "#4ff0eb", "#f3ffff"] },
+  thinking: { speed: 0.82, energy: 0.92, colors: ["#352c76", "#9a87ff", "#f1ebff"] },
+  speaking: { speed: 0.68, energy: 0.8, colors: ["#1d4778", "#69baff", "#eff8ff"] },
 };
 
-const shellVertexShader = `
+const vertexShader = `
   varying vec3 vNormal;
   varying vec3 vPosition;
   varying vec3 vViewPosition;
   void main() {
-    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
     vNormal = normalize(normalMatrix * normal);
     vPosition = position;
-    vViewPosition = -mvPosition.xyz;
-    gl_Position = projectionMatrix * mvPosition;
+    vViewPosition = -mv.xyz;
+    gl_Position = projectionMatrix * mv;
   }
 `;
 
-const shellFragmentShader = `
+const heartShader = `
   uniform float uTime;
   uniform float uEnergy;
-  uniform vec3 uColorA;
-  uniform vec3 uColorB;
-  uniform vec3 uColorC;
+  uniform vec3 uA;
+  uniform vec3 uB;
+  uniform vec3 uC;
   varying vec3 vNormal;
   varying vec3 vPosition;
   varying vec3 vViewPosition;
   void main() {
-    vec3 n = normalize(vNormal);
-    vec3 viewDir = normalize(vViewPosition);
-    float facing = abs(dot(n, viewDir));
-    float rim = pow(1.0 - facing, 2.2);
-    float scan = pow(1.0 - abs(sin(vPosition.y * 8.0 + vPosition.x * 3.0 - uTime * 0.32)), 18.0);
-    float pulse = 0.5 + 0.5 * sin(vPosition.x * 3.0 - vPosition.z * 2.0 + uTime * 0.45);
-    vec3 tint = mix(uColorA, uColorB, smoothstep(0.12, 0.92, pulse));
-    vec3 color = tint * (0.22 + rim * 0.9 + scan * 1.4);
-    color += uColorC * (rim * 0.35 + scan * 0.9);
-    float alpha = 0.035 + rim * (0.13 + uEnergy * 0.08) + scan * 0.15;
-    gl_FragColor = vec4(color, alpha);
-  }
-`;
-
-const coreFragmentShader = `
-  uniform float uTime;
-  uniform float uEnergy;
-  uniform vec3 uColorA;
-  uniform vec3 uColorB;
-  uniform vec3 uColorC;
-  varying vec3 vNormal;
-  varying vec3 vPosition;
-  varying vec3 vViewPosition;
-  float field(vec3 p) {
-    return sin(p.x * 4.1 + sin(p.y * 3.0 + uTime * 0.24)) * cos(p.z * 3.7 - uTime * 0.2);
-  }
-  void main() {
-    vec3 n = normalize(vNormal);
-    vec3 viewDir = normalize(vViewPosition);
     vec3 p = normalize(vPosition);
-    float angle = atan(p.y, p.x);
-    float spiral = sin(angle * 5.0 + p.z * 8.0 - uTime * 0.38 + field(p * 3.0));
-    float contour = pow(1.0 - abs(spiral), 13.0);
-    float sweep = pow(1.0 - abs(sin(p.z * 17.0 + angle * 2.0 + uTime * 0.28)), 18.0);
-    float fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 2.4);
-    float depth = 0.5 + 0.5 * field(p * 4.0);
-    vec3 color = mix(vec3(0.003, 0.009, 0.021), uColorA, depth * 0.28);
-    color += uColorB * (fresnel * 0.68 + contour * 0.82 + sweep * 0.32);
-    color += uColorC * (contour * 0.58 + sweep * 0.22);
-    color *= 0.82 + uEnergy * 0.25;
-    gl_FragColor = vec4(color, 0.34 + fresnel * 0.26 + contour * 0.18 + sweep * 0.1);
-  }
-`;
-
-const heartFragmentShader = `
-  uniform float uTime;
-  uniform float uEnergy;
-  uniform vec3 uColorA;
-  uniform vec3 uColorB;
-  uniform vec3 uColorC;
-  varying vec3 vNormal;
-  varying vec3 vPosition;
-  varying vec3 vViewPosition;
-  void main() {
     vec3 n = normalize(vNormal);
     vec3 viewDir = normalize(vViewPosition);
-    vec3 p = normalize(vPosition);
     float a = atan(p.y, p.x);
-    float bands = pow(1.0 - abs(sin(a * 7.0 + p.z * 10.0 - uTime * 0.7)), 12.0);
-    float currents = pow(1.0 - abs(sin(p.x * 17.0 + p.y * 13.0 - p.z * 8.0 + uTime * 0.45)), 15.0);
-    float halo = pow(1.0 - max(dot(n, viewDir), 0.0), 1.7);
-    float wave = 0.5 + 0.5 * sin(a * 2.0 - uTime * 0.32 + p.z * 4.0);
-    vec3 color = mix(uColorA, uColorB, wave);
-    color = mix(color, uColorC, bands * 0.55 + currents * 0.42);
-    color += uColorC * (halo * 0.72 + bands * 0.45 + currents * 0.4);
-    color *= 0.62 + uEnergy * 0.62;
-    gl_FragColor = vec4(color, 0.92);
+    float spiral = sin(a * 3.0 - p.z * 9.0 - uTime * 0.55 + sin(p.y * 8.0 + uTime * 0.25));
+    float filament = pow(1.0 - abs(spiral), 16.0);
+    float bands = pow(1.0 - abs(sin(a * 8.0 + p.z * 14.0 + uTime * 0.25)), 22.0);
+    float rim = pow(1.0 - max(dot(n, viewDir), 0.0), 2.0);
+    float depth = 0.5 + 0.5 * sin(p.x * 5.0 + p.y * 4.0 - p.z * 6.0 + uTime * 0.2);
+    vec3 col = mix(uA, uB, depth * 0.55 + 0.2);
+    col += uC * (filament * 1.1 + bands * 0.42 + rim * 0.34);
+    col *= 0.5 + uEnergy * 0.8;
+    gl_FragColor = vec4(col, 0.96);
   }
 `;
 
-function makeMaterial(fragmentShader, colors, transparent = true) {
-  return new THREE.ShaderMaterial({
-    vertexShader: shellVertexShader,
-    fragmentShader,
-    uniforms: {
-      uTime: { value: 0 },
-      uEnergy: { value: 0.34 },
-      uColorA: { value: new THREE.Color(colors[0]) },
-      uColorB: { value: new THREE.Color(colors[1]) },
-      uColorC: { value: new THREE.Color(colors[2]) },
-    },
-    transparent,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    blending: fragmentShader === shellFragmentShader ? THREE.AdditiveBlending : THREE.NormalBlending,
+function makeBladeGeometry() {
+  const shape = new THREE.Shape();
+  shape.moveTo(0.24, -0.06);
+  shape.bezierCurveTo(0.42, -0.43, 1.02, -0.63, 1.48, -0.35);
+  shape.bezierCurveTo(1.4, -0.02, 1.13, 0.38, 0.75, 0.5);
+  shape.bezierCurveTo(0.91, 0.2, 0.83, -0.02, 0.56, -0.14);
+  shape.bezierCurveTo(0.42, -0.2, 0.31, -0.16, 0.24, -0.06);
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.11,
+    steps: 1,
+    bevelEnabled: true,
+    bevelSegments: 5,
+    bevelThickness: 0.055,
+    bevelSize: 0.045,
+    curveSegments: 36,
   });
-}
-
-function makePlateGeometry() {
-  const source = new THREE.IcosahedronGeometry(1, 1).toNonIndexed();
-  const attribute = source.getAttribute("position");
-  const positions = [];
-  for (let i = 0; i < attribute.count; i += 3) {
-    const a = new THREE.Vector3().fromBufferAttribute(attribute, i);
-    const b = new THREE.Vector3().fromBufferAttribute(attribute, i + 1);
-    const c = new THREE.Vector3().fromBufferAttribute(attribute, i + 2);
-    const center = a.clone().add(b).add(c).multiplyScalar(1 / 3).normalize();
-    [a, b, c].forEach((vertex) => {
-      vertex.lerp(center, 0.085).normalize().multiplyScalar(1.48);
-      positions.push(vertex.x, vertex.y, vertex.z);
-    });
-  }
-  source.dispose();
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.translate(0, 0, -0.055);
   geometry.computeVertexNormals();
   return geometry;
 }
 
-function makeStruts() {
-  const group = new THREE.Group();
-  const material = new THREE.MeshBasicMaterial({
-    color: "#6bdfee",
-    transparent: true,
-    opacity: 0.28,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
-  const geometries = [];
-  const count = 12;
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-  for (let i = 0; i < count; i++) {
-    const y = 1 - (i / (count - 1)) * 2;
-    const r = Math.sqrt(1 - y * y);
-    const angle = goldenAngle * i;
-    const direction = new THREE.Vector3(Math.cos(angle) * r, y, Math.sin(angle) * r);
-    const tangent = new THREE.Vector3(-direction.z, 0, direction.x).normalize();
-    const bend = Math.sin(i * 4.7) * 0.09;
-    const curve = new THREE.CatmullRomCurve3([
-      direction.clone().multiplyScalar(0.48),
-      direction.clone().multiplyScalar(0.76).addScaledVector(tangent, bend),
-      direction.clone().multiplyScalar(1.12).addScaledVector(tangent, -bend * 0.5),
-      direction.clone().multiplyScalar(1.42),
-    ]);
-    const geometry = new THREE.TubeGeometry(curve, 24, 0.0035, 5, false);
-    geometries.push(geometry);
-    group.add(new THREE.Mesh(geometry, material));
-  }
-  return { group, material, geometries };
+function makeBladeRim() {
+  const curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.33, -0.12, 0.105),
+    new THREE.Vector3(0.57, -0.38, 0.105),
+    new THREE.Vector3(0.99, -0.49, 0.105),
+    new THREE.Vector3(1.39, -0.31, 0.105),
+  ]);
+  return new THREE.TubeGeometry(curve, 48, 0.0065, 6, false);
 }
 
 function makeOrbScene(host, modeRef) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-  camera.position.set(0, 0, 6.25);
+  camera.position.set(0, 0, 5.7);
 
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
     antialias: true,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
   renderer.setSize(host.clientWidth, host.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 1.28;
   host.appendChild(renderer.domElement);
 
   const root = new THREE.Group();
   scene.add(root);
 
-  // Broken geodesic armor: separate facets, not a solid globe.
-  const platesGeometry = makePlateGeometry();
-  const platesMaterial = makeMaterial(shellFragmentShader, MODES.standby.palette);
-  const plates = new THREE.Mesh(platesGeometry, platesMaterial);
-  root.add(plates);
+  scene.add(new THREE.AmbientLight(0x7898ad, 0.72));
+  const keyLight = new THREE.PointLight(0x4ad9ed, 52, 8, 2);
+  keyLight.position.set(-2.8, 2.4, 3.6);
+  scene.add(keyLight);
+  const coolRim = new THREE.PointLight(0x5965c8, 34, 7, 2);
+  coolRim.position.set(2.4, -1.7, -2.0);
+  scene.add(coolRim);
+  const whiteLight = new THREE.DirectionalLight(0xdaf8ff, 1.8);
+  whiteLight.position.set(1.0, 3.0, 4.0);
+  scene.add(whiteLight);
 
-  const plateEdges = new THREE.LineSegments(
-    new THREE.EdgesGeometry(platesGeometry, 1),
-    new THREE.LineBasicMaterial({
-      color: "#8cecf6",
-      transparent: true,
-      opacity: 0.48,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    })
-  );
-  root.add(plateEdges);
-
-  // A second wire cage gives the open shell depth.
-  const wireSource = new THREE.IcosahedronGeometry(1.03, 1);
-  const innerWireGeometry = new THREE.EdgesGeometry(wireSource, 1);
-  wireSource.dispose();
-  const innerWireMaterial = new THREE.LineBasicMaterial({
-    color: "#4a96bd",
+  // One thin broken halo frames the silhouette without competing with it.
+  const haloMaterial = new THREE.MeshBasicMaterial({
+    color: "#4aa9c5",
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.36,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const innerWire = new THREE.LineSegments(innerWireGeometry, innerWireMaterial);
-  root.add(innerWire);
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(1.62, 0.006, 8, 220, Math.PI * 1.72),
+    haloMaterial
+  );
+  halo.rotation.set(1.18, 0.22, -0.18);
+  root.add(halo);
 
-  const struts = makeStruts();
-  root.add(struts.group);
+  // Three substantial crescent blades form a rotating turbine around the center.
+  const rotor = new THREE.Group();
+  root.add(rotor);
+  const bladeGeometry = makeBladeGeometry();
+  const rimGeometry = makeBladeRim();
+  const bladeMaterials = [
+    new THREE.MeshPhysicalMaterial({
+      color: "#182b37",
+      metalness: 0.88,
+      roughness: 0.24,
+      clearcoat: 0.92,
+      clearcoatRoughness: 0.14,
+      emissive: "#071d29",
+      emissiveIntensity: 0.62,
+    }),
+    new THREE.MeshPhysicalMaterial({
+      color: "#202a40",
+      metalness: 0.9,
+      roughness: 0.28,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.18,
+      emissive: "#0a142c",
+      emissiveIntensity: 0.52,
+    }),
+    new THREE.MeshPhysicalMaterial({
+      color: "#172f3a",
+      metalness: 0.9,
+      roughness: 0.22,
+      clearcoat: 1,
+      clearcoatRoughness: 0.12,
+      emissive: "#08232d",
+      emissiveIntensity: 0.58,
+    }),
+  ];
+  const rimMaterials = [
+    new THREE.MeshBasicMaterial({ color: "#85efff", transparent: true, opacity: 0.76, blending: THREE.AdditiveBlending }),
+    new THREE.MeshBasicMaterial({ color: "#8299ff", transparent: true, opacity: 0.62, blending: THREE.AdditiveBlending }),
+    new THREE.MeshBasicMaterial({ color: "#70dff0", transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending }),
+  ];
+  const bladeHolders = [];
+  const rimMeshes = [];
+  for (let i = 0; i < 3; i++) {
+    const holder = new THREE.Group();
+    holder.rotation.z = (i / 3) * Math.PI * 2;
+    holder.rotation.x = (i - 1) * 0.055;
+    holder.rotation.y = (i % 2 === 0 ? 1 : -1) * 0.075;
+    const blade = new THREE.Mesh(bladeGeometry, bladeMaterials[i]);
+    blade.castShadow = false;
+    blade.receiveShadow = false;
+    holder.add(blade);
+    const rim = new THREE.Mesh(rimGeometry, rimMaterials[i]);
+    holder.add(rim);
+    rotor.add(holder);
+    bladeHolders.push(holder);
+    rimMeshes.push(rim);
+  }
 
-  // The dark lens carries moving contours; the bright heart sits behind it.
-  const coreMaterial = makeMaterial(coreFragmentShader, MODES.standby.palette, true);
-  const core = new THREE.Mesh(new THREE.SphereGeometry(0.64, 128, 128), coreMaterial);
-  root.add(core);
+  // The dark glass lens is forward of the blades, with a bright contained pupil.
+  const lens = new THREE.Mesh(
+    new THREE.SphereGeometry(0.53, 128, 128),
+    new THREE.MeshPhysicalMaterial({
+      color: "#050d17",
+      metalness: 0.58,
+      roughness: 0.16,
+      clearcoat: 1,
+      clearcoatRoughness: 0.06,
+      emissive: "#061b28",
+      emissiveIntensity: 0.48,
+    })
+  );
+  lens.position.z = 0.12;
+  root.add(lens);
 
-  const heartMaterial = makeMaterial(heartFragmentShader, MODES.standby.palette, true);
-  heartMaterial.blending = THREE.AdditiveBlending;
-  const heart = new THREE.Mesh(new THREE.SphereGeometry(0.34, 96, 96), heartMaterial);
-  heart.renderOrder = 3;
+  const lensRimMaterial = new THREE.MeshBasicMaterial({
+    color: "#8deeff",
+    transparent: true,
+    opacity: 0.82,
+    blending: THREE.AdditiveBlending,
+  });
+  const lensRim = new THREE.Mesh(
+    new THREE.TorusGeometry(0.49, 0.009, 10, 180),
+    lensRimMaterial
+  );
+  lensRim.position.z = 0.38;
+  root.add(lensRim);
+
+  const heartMaterial = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader: heartShader,
+    uniforms: {
+      uTime: { value: 0 },
+      uEnergy: { value: 0.34 },
+      uA: { value: new THREE.Color(MODES.standby.colors[0]) },
+      uB: { value: new THREE.Color(MODES.standby.colors[1]) },
+      uC: { value: new THREE.Color(MODES.standby.colors[2]) },
+    },
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const heart = new THREE.Mesh(new THREE.SphereGeometry(0.285, 96, 96), heartMaterial);
+  heart.position.z = 0.52;
+  heart.renderOrder = 4;
   root.add(heart);
 
-  const aura = new THREE.Mesh(
-    new THREE.SphereGeometry(1.66, 64, 64),
-    new THREE.ShaderMaterial({
-      uniforms: {
-        uColor: { value: new THREE.Color("#3a9dbd") },
-        uEnergy: { value: 0.34 },
-      },
-      vertexShader: `
-        varying vec3 vNormal;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uColor;
-        uniform float uEnergy;
-        varying vec3 vNormal;
-        void main() {
-          float glow = pow(1.0 - abs(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0))), 3.2);
-          gl_FragColor = vec4(uColor, glow * (0.095 + uEnergy * 0.055));
-        }
-      `,
-      side: THREE.BackSide,
+  const pupil = new THREE.Mesh(
+    new THREE.SphereGeometry(0.092, 48, 48),
+    new THREE.MeshBasicMaterial({ color: "#f2ffff" })
+  );
+  pupil.position.z = 0.79;
+  root.add(pupil);
+
+  const pupilHalo = new THREE.Mesh(
+    new THREE.SphereGeometry(0.16, 48, 48),
+    new THREE.MeshBasicMaterial({
+      color: "#58dff2",
       transparent: true,
+      opacity: 0.12,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     })
   );
-  root.add(aura);
+  pupilHalo.position.z = 0.75;
+  root.add(pupilHalo);
 
-  // Three offset iris tracks orbit the central lens.
-  const makeTrack = (radius, tube, arc, color, opacity, rotation) => {
-    const material = new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-    const mesh = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 8, 180, arc), material);
-    mesh.rotation.set(rotation[0], rotation[1], rotation[2]);
-    root.add(mesh);
-    return mesh;
-  };
-  const trackA = makeTrack(0.78, 0.006, Math.PI * 1.64, "#e4fbff", 0.72, [1.08, 0.18, 0.18]);
-  const trackB = makeTrack(0.96, 0.004, Math.PI * 1.42, "#5ed9ec", 0.5, [0.36, 1.04, -0.5]);
-  const trackC = makeTrack(1.13, 0.003, Math.PI * 1.24, "#8b8af4", 0.35, [1.52, -0.62, 0.72]);
-
-  const beacons = [];
-  for (let i = 0; i < 4; i++) {
-    const material = new THREE.MeshBasicMaterial({
-      color: i === 0 ? "#f3ffff" : "#65dff0",
-      transparent: true,
-      opacity: 0.96,
-    });
-    const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(i === 0 ? 0.035 : 0.022, 0), material);
-    root.add(mesh);
-    beacons.push({
-      mesh,
-      angle: (i / 4) * Math.PI * 2,
-      radius: 1.18 + (i % 2) * 0.13,
-      speed: 0.12 + i * 0.035,
-      phase: i * 1.7,
-    });
+  // A few tiny orbiting markers give the machine scale; no particle cloud.
+  const markers = [];
+  for (let i = 0; i < 3; i++) {
+    const marker = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.024, 0),
+      new THREE.MeshBasicMaterial({
+        color: i === 1 ? "#a89cff" : "#b8f7ff",
+        transparent: true,
+        opacity: 0.92,
+      })
+    );
+    root.add(marker);
+    markers.push(marker);
   }
-
-  // Fine dust is sparse so the silhouette stays clean.
-  const dustCount = 260;
-  const dustPositions = new Float32Array(dustCount * 3);
-  for (let i = 0; i < dustCount; i++) {
-    const radius = 1.7 + Math.random() * 1.05;
-    const theta = Math.random() * Math.PI * 2;
-    const z = Math.random() * 2 - 1;
-    const planar = Math.sqrt(1 - z * z);
-    dustPositions[i * 3] = radius * planar * Math.cos(theta);
-    dustPositions[i * 3 + 1] = radius * planar * Math.sin(theta);
-    dustPositions[i * 3 + 2] = radius * z;
-  }
-  const dustGeometry = new THREE.BufferGeometry();
-  dustGeometry.setAttribute("position", new THREE.BufferAttribute(dustPositions, 3));
-  const dustMaterial = new THREE.PointsMaterial({
-    color: "#a6dce9",
-    size: 0.012,
-    transparent: true,
-    opacity: 0.35,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    sizeAttenuation: true,
-  });
-  const dust = new THREE.Points(dustGeometry, dustMaterial);
-  root.add(dust);
-
-  const backgroundCount = 100;
-  const backgroundPositions = new Float32Array(backgroundCount * 3);
-  for (let i = 0; i < backgroundCount; i++) {
-    backgroundPositions[i * 3] = (Math.random() - 0.5) * 12;
-    backgroundPositions[i * 3 + 1] = (Math.random() - 0.5) * 8;
-    backgroundPositions[i * 3 + 2] = -2 - Math.random() * 5;
-  }
-  const backgroundGeometry = new THREE.BufferGeometry();
-  backgroundGeometry.setAttribute("position", new THREE.BufferAttribute(backgroundPositions, 3));
-  const backgroundMaterial = new THREE.PointsMaterial({
-    color: "#8daabf",
-    size: 0.008,
-    transparent: true,
-    opacity: 0.28,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
-  const backgroundStars = new THREE.Points(backgroundGeometry, backgroundMaterial);
-  scene.add(backgroundStars);
 
   const pointer = { x: 0, y: 0 };
   const onPointerMove = (event) => {
@@ -369,67 +282,55 @@ function makeOrbScene(host, modeRef) {
   resizeObserver.observe(host);
 
   const clock = new THREE.Clock();
+  const colors = MODES.standby.colors.map((hex) => new THREE.Color(hex));
+  const nextColors = MODES.standby.colors.map((hex) => new THREE.Color(hex));
   let frameId = 0;
   let disposed = false;
-  const targetColors = MODES.standby.palette.map((hex) => new THREE.Color(hex));
 
   const animate = () => {
     if (disposed) return;
     frameId = requestAnimationFrame(animate);
-
     const time = clock.getElapsedTime();
-    const activeMode = MODES[modeRef.current] || MODES.standby;
-    const energy = activeMode.energy;
-    const pulse = 1 + Math.sin(time * activeMode.speed * 1.7) * 0.009 * energy;
+    const mode = MODES[modeRef.current] || MODES.standby;
+    const energy = mode.energy;
 
-    [platesMaterial, coreMaterial, heartMaterial].forEach((material, index) => {
-      material.uniforms.uTime.value = time * activeMode.speed * (index === 2 ? 1.35 : 1);
-      material.uniforms.uEnergy.value = THREE.MathUtils.lerp(material.uniforms.uEnergy.value, energy, 0.035);
+    heartMaterial.uniforms.uTime.value = time * mode.speed;
+    heartMaterial.uniforms.uEnergy.value = THREE.MathUtils.lerp(heartMaterial.uniforms.uEnergy.value, energy, 0.04);
+    mode.colors.forEach((hex, i) => {
+      nextColors[i].set(hex);
+      colors[i].lerp(nextColors[i], 0.035);
+    });
+    heartMaterial.uniforms.uA.value.copy(colors[0]);
+    heartMaterial.uniforms.uB.value.copy(colors[1]);
+    heartMaterial.uniforms.uC.value.copy(colors[2]);
+
+    rotor.rotation.z = time * 0.075 * mode.speed;
+    rotor.rotation.y = Math.sin(time * 0.19) * 0.055 + pointer.x * 0.035;
+    rotor.rotation.x = Math.cos(time * 0.17) * 0.035 + pointer.y * 0.025;
+    bladeHolders.forEach((holder, i) => {
+      holder.rotation.z = (i / 3) * Math.PI * 2;
+      holder.position.z = Math.sin(time * 0.5 + i * 2.1) * 0.018;
+    });
+    root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, pointer.x * 0.12, 0.025);
+    root.rotation.x = THREE.MathUtils.lerp(root.rotation.x, -pointer.y * 0.09, 0.025);
+    root.scale.setScalar(1 + Math.sin(time * 1.1 * mode.speed) * 0.008 * energy);
+
+    lens.rotation.y = time * 0.045 * mode.speed;
+    lens.rotation.x = Math.sin(time * 0.22) * 0.035;
+    lensRim.rotation.z = -time * 0.12 * mode.speed;
+    heart.rotation.y = -time * 0.18 * mode.speed;
+    heart.rotation.x = Math.sin(time * 0.25) * 0.06;
+    heart.scale.setScalar(1 + Math.sin(time * 1.8) * 0.035 * energy);
+    pupilHalo.scale.setScalar(1 + Math.sin(time * 2.0) * 0.12 * energy);
+    halo.rotation.z = time * 0.018 * mode.speed;
+
+    markers.forEach((marker, i) => {
+      const angle = time * (0.16 + i * 0.035) + i * (Math.PI * 2 / 3);
+      marker.position.set(Math.cos(angle) * 1.58, Math.sin(angle) * 1.58, Math.sin(angle * 1.3) * 0.16);
+      marker.rotation.set(time * 0.4, time * 0.6, time * 0.3);
     });
 
-    activeMode.palette.forEach((hex, index) => {
-      targetColors[index].set(hex);
-      const key = ["uColorA", "uColorB", "uColorC"][index];
-      [platesMaterial, coreMaterial, heartMaterial].forEach((material) => {
-        material.uniforms[key].value.lerp(targetColors[index], 0.035);
-      });
-    });
-
-    root.scale.setScalar(pulse);
-    root.rotation.y = time * 0.035 * activeMode.speed + pointer.x * 0.035;
-    root.rotation.x = THREE.MathUtils.lerp(root.rotation.x, pointer.y * 0.04, 0.025);
-    root.rotation.z = THREE.MathUtils.lerp(root.rotation.z, -pointer.x * 0.025, 0.025);
-
-    plates.rotation.y = -time * 0.025 * activeMode.speed;
-    plates.rotation.x = Math.sin(time * 0.13) * 0.025;
-    plateEdges.rotation.copy(plates.rotation);
-    innerWire.rotation.y = time * 0.052 * activeMode.speed;
-    innerWire.rotation.x = -time * 0.019;
-    struts.group.rotation.y = -time * 0.018 * activeMode.speed;
-    core.rotation.y = -time * 0.08 * activeMode.speed;
-    core.rotation.x = Math.sin(time * 0.16) * 0.035;
-    heart.rotation.y = time * 0.15 * activeMode.speed;
-    heart.rotation.x = Math.sin(time * 0.22) * 0.08;
-    heart.scale.setScalar(1 + Math.sin(time * 1.3) * 0.035 * energy);
-
-    trackA.rotation.z += 0.00065 * activeMode.speed;
-    trackB.rotation.x -= 0.0005 * activeMode.speed;
-    trackC.rotation.y += 0.00042 * activeMode.speed;
-    aura.material.uniforms.uEnergy.value = THREE.MathUtils.lerp(aura.material.uniforms.uEnergy.value, energy, 0.04);
-    aura.material.uniforms.uColor.value.lerp(targetColors[1], 0.025);
-    dust.rotation.y = -time * 0.008;
-    dust.rotation.x = Math.sin(time * 0.07) * 0.025;
-
-    beacons.forEach(({ mesh, angle, radius, speed, phase }) => {
-      const a = angle + time * speed * activeMode.speed;
-      mesh.position.set(
-        Math.cos(a) * radius,
-        Math.sin(a * 1.17 + phase) * 0.23,
-        Math.sin(a) * radius * 0.54
-      );
-      mesh.rotation.set(time * 0.3, time * 0.5, time * 0.2);
-    });
-
+    keyLight.intensity = 42 + energy * 16;
     renderer.render(scene, camera);
   };
   animate();
@@ -440,32 +341,26 @@ function makeOrbScene(host, modeRef) {
     resizeObserver.disconnect();
     host.removeEventListener("pointermove", onPointerMove);
 
-    platesGeometry.dispose();
-    platesMaterial.dispose();
-    plateEdges.geometry.dispose();
-    plateEdges.material.dispose();
-    innerWireGeometry.dispose();
-    innerWireMaterial.dispose();
-    struts.geometries.forEach((geometry) => geometry.dispose());
-    struts.material.dispose();
-    core.geometry.dispose();
-    coreMaterial.dispose();
+    halo.geometry.dispose();
+    halo.material.dispose();
+    bladeGeometry.dispose();
+    rimGeometry.dispose();
+    bladeMaterials.forEach((material) => material.dispose());
+    rimMaterials.forEach((material) => material.dispose());
+    lens.geometry.dispose();
+    lens.material.dispose();
+    lensRim.geometry.dispose();
+    lensRim.material.dispose();
     heart.geometry.dispose();
     heartMaterial.dispose();
-    aura.geometry.dispose();
-    aura.material.dispose();
-    [trackA, trackB, trackC].forEach((track) => {
-      track.geometry.dispose();
-      track.material.dispose();
+    pupil.geometry.dispose();
+    pupil.material.dispose();
+    pupilHalo.geometry.dispose();
+    pupilHalo.material.dispose();
+    markers.forEach((marker) => {
+      marker.geometry.dispose();
+      marker.material.dispose();
     });
-    beacons.forEach(({ mesh }) => {
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-    });
-    dustGeometry.dispose();
-    dustMaterial.dispose();
-    backgroundGeometry.dispose();
-    backgroundMaterial.dispose();
     renderer.dispose();
     renderer.domElement.remove();
   };
