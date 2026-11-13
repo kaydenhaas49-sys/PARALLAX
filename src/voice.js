@@ -1,10 +1,10 @@
-// Original Friday-inspired voice profile for PARALLAX.
-// Kore is firmer and more direct than Nicole's softer, breathier delivery.
+// PARALLAX starts with Kokoro’s best-rated British-English female preset.
+// This is a distinct synthetic voice, not a Kerry Condon voice clone.
 export const PARALLAX_VOICE = Object.freeze({
-  id: "af_kore",
-  name: "Kore",
+  id: "bf_emma",
+  name: "Emma (British English)",
   normalSpeed: 0.98,
-  urgentSpeed: 1.18,
+  urgentSpeed: 1.14,
 });
 
 const URGENT_CONTEXT =
