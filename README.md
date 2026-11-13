@@ -1,28 +1,29 @@
 # PARALLAX
 
-A local-first visual prototype for PARALLAX: an independent situational-intelligence project.
+A minimal, local-first visual prototype for PARALLAX: an independent situational-intelligence project.
 
-The first milestone is intentionally focused: one polished, animated 3D orb with restrained controls and distinct visual states.
+The interface is intentionally just the animated 3D orb. There are no dashboards, panels, labels, or on-screen controls.
 
-## What is included
+## Included
 
-- React + Vite application shell
+- React + Vite application
 - Three.js shader-driven orb with animated internal light patterns
-- Layered orbital rings, particles, and subtle depth cues
-- Four visual states: Standby, Listen, Think, and Speak
-- Pointer-responsive orb orientation
-- Keyboard shortcuts: `1` Standby, `2` Listen, `3` Think, `4` Speak, `Escape` Standby
+- Subtle orbital rings, particles, and atmospheric glow
+- Four visual states accessible through keyboard shortcuts:
+  - `1` — Standby
+  - `2` — Listening
+  - `3` — Thinking
+  - `4` — Speaking
+  - `Escape` — Standby
 
-## What is not connected yet
-
-The state buttons are visual previews only. This repository does not yet connect a microphone, speech recognition, a reasoning model, persistent memory, or computer/environmental perception. The interface labels this clearly.
+The states currently change the visualization only. Microphone, speech recognition, reasoning, memory, and perception services are not connected yet.
 
 ## Requirements
 
 - Node.js 20 or newer
 - npm
 
-## Run locally on Omarchy / Linux
+## Run locally on Linux
 
 ```bash
 git clone https://github.com/kaydenhaas49-sys/PARALLAX.git
@@ -31,9 +32,9 @@ npm install
 npm run dev
 ```
 
-Open **http://127.0.0.1:4174** in your browser.
+Open **http://127.0.0.1:4174**.
 
-The dev server binds to localhost and uses port 4174 with strict port checking so it will not silently choose another port.
+The development server binds to localhost and uses strict port checking.
 
 ## Production build
 
@@ -42,24 +43,4 @@ npm run build
 npm run preview
 ```
 
-The production files are written to `dist/`.
-
-## Project structure
-
-```
-PARALLAX/
-├── index.html
-├── package.json
-├── src/
-│   ├── App.jsx
-│   ├── main.jsx
-│   └── styles.css
-└── README.md
-```
-
-## Next milestones
-
-1. Refine orb appearance and animation based on real-device feedback.
-2. Add a local backend connection and truthful connection status.
-3. Wire audio input and output with explicit user-controlled permissions.
-4. Add the reasoning and perception services as separate modules.
+Production files are written to `dist/`.
