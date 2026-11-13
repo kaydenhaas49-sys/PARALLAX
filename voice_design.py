@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a casual, blunt, funny PARALLAX voice-design audition with Qwen3-TTS.
+"""Generate a lower-register, casual PARALLAX voice-design audition with Qwen3-TTS.
 
 This is an original synthetic voice and conversational style. It does not use
 reference audio or imitate the user's personal voice or any named performer.
@@ -25,19 +25,22 @@ VOICE_DESCRIPTION = (
     "Her humour is dry, cheeky, blunt, and sometimes playfully sarcastic. "
     "She can react with genuine amusement, mild disbelief, or an occasional "
     "exasperated 'seriously?' without sounding mean. Keep it spontaneous "
-    "and laid-back, but still smart, capable, and dependable. Use a clear, "
-    "natural feminine medium register with an easy, bright tone. Avoid a "
-    "low, husky, breathy, intimate, sultry, flirtatious, seductive, or "
-    "overly polished sound. Keep the accent lightly Irish-English, subtle "
-    "and easy to understand. Speak at a relaxed conversational pace with "
-    "natural rhythm and expressive variation, never rushed or announcer-like. "
-    "When something important happens, she gets focused without suddenly "
-    "turning into a stiff corporate assistant. Keep the recording clean and "
-    "dry, without room ambience or reverb. Do not vocalize breathing: no "
-    "audible inhalations, exhalations, sighs, gasps, lip smacks, clicks, or "
-    "other mouth noises. No whispering or artificial seductive texture. "
-    "This is an original voice design, not a copy of anyone's personal voice "
-    "or any specific actor or fictional character."
+    "and laid-back, but still smart, capable, and dependable. Give her a "
+    "noticeably lower feminine speaking pitch: a grounded lower-mid register, "
+    "with a naturally full, clear, lightly resonant tone. Keep it feminine "
+    "and easy to understand, not artificially deep, gravelly, husky, or "
+    "booming. Avoid high-pitched brightness and upward, sing-song delivery. "
+    "This lower pitch must sound casual and matter-of-fact, not intimate, "
+    "sultry, flirtatious, or seductive. Keep the accent lightly Irish-English, "
+    "subtle and easy to understand. Speak at a relaxed conversational pace "
+    "with natural rhythm and expressive variation, never rushed or "
+    "announcer-like. When something important happens, she gets focused "
+    "without suddenly turning into a stiff corporate assistant. Keep the "
+    "recording clean and dry, without room ambience or reverb. Do not "
+    "vocalize breathing: no audible inhalations, exhalations, sighs, gasps, "
+    "lip smacks, clicks, or other mouth noises. No whispering or artificial "
+    "seductive texture. This is an original voice design, not a copy of "
+    "anyone's personal voice or any specific actor or fictional character."
 )
 AUDITION_TEXT = (
     "Oh, morning. You're alive. Excellent start. Everything's online, "
@@ -46,7 +49,7 @@ AUDITION_TEXT = (
     "display because, let's be honest, you were probably going to forget. "
     "Uh, tiny problem. There's a massive obstruction right in front of us. "
     "We could turn left, or we could keep driving into it like absolute "
-    " geniuses. I'd vote left. "
+    "geniuses. I'd vote left. "
     "There. New route sorted. See? We're kind of a great team."
 )
 
@@ -58,10 +61,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("voice-auditions/parallax-qwen3-voice-design-v4.wav"),
+        default=Path("voice-auditions/parallax-qwen3-voice-design-v5.wav"),
         help=(
             "WAV output path "
-            "(default: voice-auditions/parallax-qwen3-voice-design-v4.wav)"
+            "(default: voice-auditions/parallax-qwen3-voice-design-v5.wav)"
         ),
     )
     parser.add_argument(
@@ -72,8 +75,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--seed",
         type=int,
-        default=53,
-        help="Generation seed for a repeatable starting point (default: 53)",
+        default=67,
+        help="Generation seed for a repeatable starting point (default: 67)",
     )
     return parser.parse_args()
 
@@ -128,7 +131,7 @@ def main() -> int:
         attn_implementation="sdpa",
     )
 
-    print("Designing the casual PARALLAX v4 audition...", flush=True)
+    print("Designing the lower-register PARALLAX v5 audition...", flush=True)
     wavs, sample_rate = model.generate_voice_design(
         text=AUDITION_TEXT,
         language="English",
@@ -143,7 +146,7 @@ def main() -> int:
     sf.write(args.output, wavs[0], sample_rate)
     sidecar = args.output.with_suffix(".txt")
     sidecar.write_text(
-        "PARALLAX original voice-design audition — version 4\n"
+        "PARALLAX original voice-design audition — version 5\n"
         f"Model: {MODEL_ID}\n"
         f"Device: {device}\n"
         f"Seed: {args.seed}\n"
