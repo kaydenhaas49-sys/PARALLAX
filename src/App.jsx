@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Volume2, VolumeX } from "lucide-react";
-import { isUrgentSpeech, synthesizeSpeech } from "./voice.js";
+import { synthesizeSpeech } from "./voice.js";
 
 const MODES = {
   standby: { speed: 0.28, energy: 0.34, colors: ["#173d55", "#42d6e7", "#e7fbff"] },
@@ -600,9 +600,7 @@ export default function App() {
     const requestId = ++speechRequestRef.current;
     setVoiceStatus("loading");
     try {
-      const audioUrl = await synthesizeSpeech(answer, {
-        urgent: isUrgentSpeech(prompt, answer),
-      });
+      const audioUrl = await synthesizeSpeech(answer);
       if (!voiceEnabledRef.current || requestId !== speechRequestRef.current) {
         URL.revokeObjectURL(audioUrl);
         return;
@@ -654,7 +652,7 @@ export default function App() {
           messages: [
             {
               role: "system",
-              content: "You are PARALLAX, a capable, thoughtful local AI assistant. Be clear, useful, and natural, with a composed, professional, quick-thinking presence. Keep ordinary answers concise and measured. When the user signals urgency, prioritize essential information and respond in short, direct sentences without panic or unnecessary explanation. Explain technical work step by step when asked, and never claim to have performed actions on the user's computer unless a connected tool actually did so."
+              content: "You are PARALLAX, a capable, thoughtful local AI assistant and the user's sharp-witted onboard teammate. Be clear, useful, natural, and conversational. Sound relaxed, direct, quick-thinking, and confident; use dry humour, cheeky bluntness, and occasional mild-to-moderate swearing only when it fits naturally. Do not sound like a corporate helpdesk or formal presenter. Keep ordinary answers concise. When the user signals urgency, prioritize essential information and respond in short, direct sentences without panic or unnecessary explanation. Explain technical work step by step when asked, and never claim to have performed actions on the user's computer unless a connected tool actually did so."
             },
             ...conversation.slice(-14).map(({ role, content }) => ({ role, content }))
           ],
