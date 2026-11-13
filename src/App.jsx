@@ -70,10 +70,10 @@ function makeBladeGeometry() {
 
 function makeBladeRim() {
   const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.33, -0.12, 0.105),
-    new THREE.Vector3(0.57, -0.38, 0.105),
-    new THREE.Vector3(0.99, -0.49, 0.105),
-    new THREE.Vector3(1.39, -0.31, 0.105),
+    new THREE.Vector3(0.33, -0.12, 0.18),
+    new THREE.Vector3(0.57, -0.38, 0.18),
+    new THREE.Vector3(0.99, -0.49, 0.18),
+    new THREE.Vector3(1.39, -0.31, 0.18),
   ]);
   return new THREE.TubeGeometry(curve, 48, 0.0065, 6, false);
 }
@@ -303,6 +303,9 @@ function makeOrbScene(host, modeRef) {
     heartMaterial.uniforms.uA.value.copy(colors[0]);
     heartMaterial.uniforms.uB.value.copy(colors[1]);
     heartMaterial.uniforms.uC.value.copy(colors[2]);
+    rimMaterials.forEach((material) => material.color.lerp(colors[1], 0.025));
+    haloMaterial.color.lerp(colors[0], 0.02);
+    lensRimMaterial.color.lerp(colors[2], 0.025);
 
     rotor.rotation.z = time * 0.075 * mode.speed;
     rotor.rotation.y = Math.sin(time * 0.19) * 0.055 + pointer.x * 0.035;
