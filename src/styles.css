@@ -285,3 +285,30 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .orb-halo { animation: none; }
 }
+
+.composer button.voice-toggle {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-color: rgba(119, 211, 227, 0.16);
+  background: rgba(57, 151, 171, 0.08);
+  color: rgba(184, 220, 230, 0.78);
+  font-size: 14px;
+}
+
+.composer button.voice-toggle.enabled {
+  border-color: rgba(119, 211, 227, 0.25);
+  background: rgba(57, 151, 171, 0.15);
+  color: #b8f5ff;
+}
+
+.composer button.voice-toggle.muted {
+  border-color: rgba(155, 166, 174, 0.14);
+  background: rgba(120, 130, 140, 0.07);
+  color: rgba(165, 178, 186, 0.52);
+}
+
+.composer button.voice-toggle:hover:not(:disabled) {
+  background: rgba(57, 181, 201, 0.22);
+}
+
