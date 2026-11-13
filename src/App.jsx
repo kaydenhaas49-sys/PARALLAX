@@ -354,13 +354,18 @@ function makeOrbScene(host, modeRef) {
     markers.push(marker);
   }
 
+  // Track the cursor across the whole window so the orb can physically follow it.
   const pointer = { x: 0, y: 0 };
   const onPointerMove = (event) => {
-    const rect = host.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-    pointer.y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+    pointer.x = (event.clientX / Math.max(1, window.innerWidth) - 0.5) * 2;
+    pointer.y = (event.clientY / Math.max(1, window.innerHeight) - 0.5) * 2;
   };
-  host.addEventListener("pointermove", onPointerMove);
+  const onPointerLeave = () => {
+    pointer.x = 0;
+    pointer.y = 0;
+  };
+  window.addEventListener("pointermove", onPointerMove);
+  document.documentElement.addEventListener("pointerleave", onPointerLeave);
 
   const resizeObserver = new ResizeObserver(() => {
     const width = Math.max(1, host.clientWidth);
@@ -413,8 +418,11 @@ function makeOrbScene(host, modeRef) {
       holder.rotation.z = (i / 3) * Math.PI * 2;
       holder.position.z = Math.sin(time * 0.5 + i * 2.1) * 0.018;
     });
-    root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, pointer.x * 0.12, 0.025);
-    root.rotation.x = THREE.MathUtils.lerp(root.rotation.x, -pointer.y * 0.09, 0.025);
+    // Smoothly drift toward the cursor, with enough restraint to keep the orb framed.
+    root.position.x = THREE.MathUtils.lerp(root.position.x, pointer.x * 0.62, 0.035);
+    root.position.y = THREE.MathUtils.lerp(root.position.y, -pointer.y * 0.5, 0.035);
+    root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, pointer.x * 0.16, 0.035);
+    root.rotation.x = THREE.MathUtils.lerp(root.rotation.x, -pointer.y * 0.12, 0.035);
     root.scale.setScalar(1 + Math.sin(time * 1.1 * mode.speed) * 0.008 * energy);
 
     lens.rotation.y = time * 0.045 * mode.speed;
@@ -441,7 +449,8 @@ function makeOrbScene(host, modeRef) {
     disposed = true;
     cancelAnimationFrame(frameId);
     resizeObserver.disconnect();
-    host.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointermove", onPointerMove);
+    document.documentElement.removeEventListener("pointerleave", onPointerLeave);
 
     halo.geometry.dispose();
     halo.material.dispose();
