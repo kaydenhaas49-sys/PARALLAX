@@ -87,9 +87,9 @@ body {
 
 .orb-stage {
   position: relative;
-  width: min(82vmin, 820px);
-  height: min(82vmin, 820px);
-  max-width: 94vw;
+  width: min(90vmin, 1000px);
+  height: min(90vmin, 1000px);
+  max-width: 96vw;
   max-height: 94vh;
   max-height: 94dvh;
   touch-action: pan-y;
