@@ -7,7 +7,7 @@ export const PARALLAX_VOICE = Object.freeze({
 });
 
 const URGENT_CONTEXT =
-  /\b(urgent|urgently|emergency|critical|danger|immediately|right now|asap|mayday|distress|warning|failing|losing altitude|under attack|need help|help me now)\b/i;
+  /\b(urgent|urgently|emergency|critical|danger|immediately|right now|asap|mayday|distress|warning|failing|losing altitude|losing control|thruster gave out|thruster failure|engine failure|engine out|power loss|rapid descent|under attack|need help|help me now)\b/i;
 
 export function isUrgentSpeech(userText = "", assistantText = "") {
   return URGENT_CONTEXT.test(userText) || URGENT_CONTEXT.test(assistantText);
