@@ -6,4 +6,6 @@ dist
 !.env.example
 *.log
 .venv-tts/
+.venv-voice-design/
+voice-auditions/
 __pycache__/
