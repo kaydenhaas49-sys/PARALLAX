@@ -78,6 +78,30 @@ function makeBladeRim() {
   return new THREE.TubeGeometry(curve, 48, 0.0065, 6, false);
 }
 
+
+function makeBladeEngravings() {
+  const paths = [
+    [
+      new THREE.Vector3(0.36, -0.07, 0.119),
+      new THREE.Vector3(0.62, -0.28, 0.119),
+      new THREE.Vector3(0.98, -0.36, 0.119),
+      new THREE.Vector3(1.29, -0.29, 0.119),
+    ],
+    [
+      new THREE.Vector3(0.52, 0.02, 0.119),
+      new THREE.Vector3(0.77, 0.13, 0.119),
+      new THREE.Vector3(1.03, 0.12, 0.119),
+    ],
+  ];
+  return paths.map((points, index) => new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(points),
+    36,
+    index === 0 ? 0.004 : 0.0028,
+    5,
+    false
+  ));
+}
+
 function makeOrbScene(host, modeRef) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
@@ -129,6 +153,20 @@ function makeOrbScene(host, modeRef) {
   root.add(rotor);
   const bladeGeometry = makeBladeGeometry();
   const rimGeometry = makeBladeRim();
+  const engravingGeometries = makeBladeEngravings();
+  const engravingMaterial = new THREE.MeshBasicMaterial({
+    color: "#83dbe9",
+    transparent: true,
+    opacity: 0.2,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const fastenerGeometry = new THREE.SphereGeometry(0.018, 16, 16);
+  const fastenerMaterial = new THREE.MeshStandardMaterial({
+    color: "#7895a2",
+    metalness: 0.95,
+    roughness: 0.22,
+  });
   const bladeMaterials = [
     new THREE.MeshPhysicalMaterial({
       color: "#182b37",
@@ -177,6 +215,14 @@ function makeOrbScene(host, modeRef) {
     const rim = new THREE.Mesh(rimGeometry, rimMaterials[i]);
     holder.add(rim);
     rotor.add(holder);
+    engravingGeometries.forEach((geometry) => {
+      holder.add(new THREE.Mesh(geometry, engravingMaterial));
+    });
+    const fastenerA = new THREE.Mesh(fastenerGeometry, fastenerMaterial);
+    fastenerA.position.set(0.47, -0.12, 0.13);
+    const fastenerB = new THREE.Mesh(fastenerGeometry, fastenerMaterial);
+    fastenerB.position.set(1.17, -0.27, 0.13);
+    holder.add(fastenerA, fastenerB);
     bladeHolders.push(holder);
     rimMeshes.push(rim);
   }
@@ -209,6 +255,50 @@ function makeOrbScene(host, modeRef) {
   );
   lensRim.position.z = 0.38;
   root.add(lensRim);
+
+  // Concentric aperture rings make the central eye feel like a precision instrument.
+  const apertureOuterMaterial = new THREE.MeshBasicMaterial({
+    color: "#6edff0",
+    transparent: true,
+    opacity: 0.38,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const apertureInnerMaterial = new THREE.MeshBasicMaterial({
+    color: "#d8faff",
+    transparent: true,
+    opacity: 0.7,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const apertureOuter = new THREE.Mesh(
+    new THREE.TorusGeometry(0.365, 0.006, 8, 160),
+    apertureOuterMaterial
+  );
+  apertureOuter.position.z = 0.59;
+  root.add(apertureOuter);
+  const apertureInner = new THREE.Mesh(
+    new THREE.TorusGeometry(0.235, 0.004, 8, 144),
+    apertureInnerMaterial
+  );
+  apertureInner.position.z = 0.69;
+  root.add(apertureInner);
+  const apertureTicks = new THREE.Group();
+  root.add(apertureTicks);
+  const tickGeometry = new THREE.BoxGeometry(0.035, 0.004, 0.004);
+  const tickMaterial = new THREE.MeshBasicMaterial({
+    color: "#9deefa",
+    transparent: true,
+    opacity: 0.56,
+    blending: THREE.AdditiveBlending,
+  });
+  for (let i = 0; i < 8; i++) {
+    const tick = new THREE.Mesh(tickGeometry, tickMaterial);
+    const angle = (i / 8) * Math.PI * 2;
+    tick.position.set(Math.cos(angle) * 0.405, Math.sin(angle) * 0.405, 0.61);
+    tick.rotation.z = angle;
+    apertureTicks.add(tick);
+  }
 
   const heartMaterial = new THREE.ShaderMaterial({
     vertexShader,
@@ -311,6 +401,15 @@ function makeOrbScene(host, modeRef) {
     rotor.rotation.y = Math.sin(time * 0.19) * 0.055 + pointer.x * 0.035;
     rotor.rotation.x = Math.cos(time * 0.17) * 0.035 + pointer.y * 0.025;
     bladeHolders.forEach((holder, i) => {
+      holder.rotation.x = Math.sin(time * 0.42 + i * 2.1) * 0.018;
+      holder.rotation.y = Math.cos(time * 0.36 + i * 2.1) * 0.014;
+    });
+    apertureOuter.rotation.z = time * 0.055 * mode.speed;
+    apertureInner.rotation.z = -time * 0.085 * mode.speed;
+    apertureTicks.rotation.z = time * 0.025 * mode.speed;
+    apertureOuterMaterial.opacity = 0.3 + energy * 0.16;
+    apertureInnerMaterial.opacity = 0.58 + energy * 0.18;
+    bladeHolders.forEach((holder, i) => {
       holder.rotation.z = (i / 3) * Math.PI * 2;
       holder.position.z = Math.sin(time * 0.5 + i * 2.1) * 0.018;
     });
@@ -348,12 +447,23 @@ function makeOrbScene(host, modeRef) {
     halo.material.dispose();
     bladeGeometry.dispose();
     rimGeometry.dispose();
+    engravingGeometries.forEach((geometry) => geometry.dispose());
+    engravingMaterial.dispose();
+    fastenerGeometry.dispose();
+    fastenerMaterial.dispose();
     bladeMaterials.forEach((material) => material.dispose());
     rimMaterials.forEach((material) => material.dispose());
     lens.geometry.dispose();
     lens.material.dispose();
     lensRim.geometry.dispose();
     lensRim.material.dispose();
+    apertureOuter.geometry.dispose();
+    apertureOuterMaterial.dispose();
+    apertureInner.geometry.dispose();
+    apertureInnerMaterial.dispose();
+    apertureTicks.children.forEach((tick) => tick.geometry.dispose());
+    tickGeometry.dispose();
+    tickMaterial.dispose();
     heart.geometry.dispose();
     heartMaterial.dispose();
     pupil.geometry.dispose();
