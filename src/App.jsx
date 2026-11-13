@@ -595,7 +595,7 @@ export default function App() {
     clearSpeech();
   };
 
-  const speakAssistant = async (answer, prompt) => {
+  const speakAssistant = async (answer) => {
     if (!voiceEnabledRef.current) return;
     const requestId = ++speechRequestRef.current;
     setVoiceStatus("loading");
@@ -676,7 +676,7 @@ export default function App() {
 
       setMessages((current) => [...current, { id: Date.now() + 1, role: "assistant", content: answer.trim() }]);
       if (voiceEnabledRef.current) {
-        void speakAssistant(answer.trim(), text);
+        void speakAssistant(answer.trim());
       } else {
         setMode("speaking");
         if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
