@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a first PARALLAX voice-design audition with Qwen3-TTS.
+"""Generate a second, cleaner PARALLAX voice-design audition with Qwen3-TTS.
 
 This is an original synthetic voice design. It does not use reference audio
 or imitate a named actor or fictional character.
@@ -13,25 +13,30 @@ from pathlib import Path
 
 MODEL_ID = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
 VOICE_DESCRIPTION = (
-    "An original feminine adult English voice, mature and composed, with a "
-    "clear, gently resonant mid-to-low register. Use a subtle contemporary "
-    "Irish English accent with a light natural lilt, kept restrained and "
-    "very easy to understand. Speak at a measured, even pace with deliberate "
-    "pauses, crisp consonants, natural vowels, and steady breath support. "
-    "The delivery should feel intelligent, reassuring, quietly confident, "
-    "and precise. Avoid a breathy, whispery, sultry, rushed, robotic, or "
-    "overly theatrical sound. Keep the same grounded vocal identity when "
-    "the wording becomes urgent; convey urgency through controlled emphasis, "
-    "not by speeding up. This is an original voice, not an imitation of any "
-    "specific actor or character."
+    "Create an original feminine adult English voice for a premium onboard "
+    "AI assistant. The voice is mature, poised, intelligent, and quietly "
+    "confident, with a clear, smooth mid-to-low register and precise "
+    "articulation. Give it a very subtle contemporary Irish-English vowel "
+    "colour, never a broad or theatrical accent. The sound should be polished "
+    "and studio-clean: dry, close, even in level, with no room ambience or "
+    "reverb. Keep the delivery controlled, fluid, measured, and unhurried, "
+    "with short natural pauses and consistent tone. It should feel refined "
+    "and slightly cool, but still reassuring and warm when appropriate. "
+    "This is a designed digital-assistant voice, not an actor performing a "
+    "character. Do not vocalize breathing: absolutely no audible inhalations "
+    "or exhalations, sighs, gasps, lip smacks, clicks, or other mouth noises. "
+    "Do not add breathy texture, whispering, vocal fry, exaggerated emotion, "
+    "or theatrical emphasis. Keep the voice stable during alerts; signal "
+    "urgency with crisp emphasis rather than speed or volume. This must be "
+    "an original voice, not an imitation of any specific actor or character."
 )
 AUDITION_TEXT = (
-    "Good morning. All systems are online, and the navigation route is ready.\n\n"
+    "Good morning. All systems are online. Navigation is ready. "
     "Your next appointment begins in twenty minutes. I have prepared the "
-    "relevant information and placed it on your display.\n\n"
-    "Attention. The forward sensors have detected an unexpected obstruction. "
-    "I recommend adjusting course now.\n\n"
-    "The revised route is ready. Would you like me to proceed?"
+    "relevant information and placed it on your display. "
+    "Attention. The forward sensors have detected an obstruction. "
+    "I recommend a small course adjustment. "
+    "The revised route is ready. Shall I proceed?"
 )
 
 
@@ -42,8 +47,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("voice-auditions/parallax-qwen3-voice-design.wav"),
-        help="WAV output path (default: voice-auditions/parallax-qwen3-voice-design.wav)",
+        default=Path("voice-auditions/parallax-qwen3-voice-design-v2.wav"),
+        help=(
+            "WAV output path "
+            "(default: voice-auditions/parallax-qwen3-voice-design-v2.wav)"
+        ),
     )
     parser.add_argument(
         "--device",
@@ -53,8 +61,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--seed",
         type=int,
-        default=17,
-        help="Generation seed for a repeatable starting point (default: 17)",
+        default=29,
+        help="Generation seed for a repeatable starting point (default: 29)",
     )
     return parser.parse_args()
 
@@ -109,13 +117,13 @@ def main() -> int:
         attn_implementation="sdpa",
     )
 
-    print("Designing and generating the PARALLAX audition...", flush=True)
+    print("Designing the cleaner PARALLAX v2 audition...", flush=True)
     wavs, sample_rate = model.generate_voice_design(
         text=AUDITION_TEXT,
         language="English",
         instruct=VOICE_DESCRIPTION,
         do_sample=True,
-        temperature=0.7,
+        temperature=0.55,
     )
     if not wavs or wavs[0] is None:
         raise RuntimeError("Qwen3-TTS returned no audio.")
@@ -124,10 +132,11 @@ def main() -> int:
     sf.write(args.output, wavs[0], sample_rate)
     sidecar = args.output.with_suffix(".txt")
     sidecar.write_text(
-        "PARALLAX original voice-design audition\n"
+        "PARALLAX original voice-design audition — version 2\n"
         f"Model: {MODEL_ID}\n"
         f"Device: {device}\n"
-        f"Seed: {args.seed}\n\n"
+        f"Seed: {args.seed}\n"
+        "Temperature: 0.55\n\n"
         "VOICE DESCRIPTION\n"
         f"{VOICE_DESCRIPTION}\n\n"
         "AUDITION TEXT\n"
@@ -138,8 +147,8 @@ def main() -> int:
     print(f"Saved audition: {args.output.resolve()}", flush=True)
     print(f"Saved prompt notes: {sidecar.resolve()}", flush=True)
     print(
-        "Listen to the WAV before changing PARALLAX's active TTS engine. "
-        "This script does not alter the existing Kokoro service.",
+        "This is a separate audition only; PARALLAX's active Kokoro service "
+        "has not been changed.",
         flush=True,
     )
     return 0
