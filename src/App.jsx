@@ -522,12 +522,108 @@ function makeOrbScene(host, modeRef) {
 
 export default function App() {
   const [mode, setMode] = useState("standby");
+  const [messages, setMessages] = useState([]);
+  const [draft, setDraft] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [connection, setConnection] = useState({ status: "connecting", model: "" });
+  const [model, setModel] = useState("glm");
   const orbStage = useRef(null);
+  const speakingTimer = useRef(null);
   const modeRef = useRef(mode);
 
   useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
+
+  useEffect(() => {
+    let active = true;
+    const connectToGLM = async () => {
+      try {
+        const response = await fetch("/api/glm/models");
+        if (!response.ok) throw new Error("GLM model endpoint returned " + response.status);
+        const payload = await response.json();
+        const availableModel =
+          payload.data?.[0]?.id ||
+          payload.models?.[0]?.name ||
+          payload.models?.[0]?.model ||
+          "glm";
+        if (!active) return;
+        setModel(availableModel);
+        setConnection({ status: "online", model: availableModel });
+      } catch {
+        if (!active) return;
+        setConnection({ status: "offline", model: "" });
+      }
+    };
+    connectToGLM();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => () => {
+    if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
+  }, []);
+
+  const sendMessage = async (event) => {
+    event.preventDefault();
+    const text = draft.trim();
+    if (!text || isSending) return;
+
+    const userMessage = { id: Date.now(), role: "user", content: text };
+    const conversation = [...messages, userMessage];
+    setMessages(conversation);
+    setDraft("");
+    setIsSending(true);
+    setMode("thinking");
+
+    try {
+      const response = await fetch("/api/glm/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: "system",
+              content: "You are PARALLAX, a capable, thoughtful local AI assistant. Be clear, useful, and natural. Keep ordinary answers concise, explain technical work step by step when asked, and never claim to have performed actions on the user's computer unless a connected tool actually did so."
+            },
+            ...conversation.slice(-14).map(({ role, content }) => ({ role, content }))
+          ],
+          temperature: 0.7,
+          max_tokens: 1200,
+          stream: false
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error?.message || payload.message || ("GLM request failed (" + response.status + ")"));
+      }
+      const rawContent = payload.choices?.[0]?.message?.content;
+      const answer = Array.isArray(rawContent)
+        ? rawContent.map((part) => typeof part === "string" ? part : (part.text || part.content || "")).join("")
+        : rawContent;
+      if (typeof answer !== "string" || !answer.trim()) {
+        throw new Error("GLM returned an empty response.");
+      }
+
+      setMessages((current) => [...current, { id: Date.now() + 1, role: "assistant", content: answer.trim() }]);
+      setMode("speaking");
+      if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
+      speakingTimer.current = window.setTimeout(() => {
+        setMode((current) => current === "speaking" ? "standby" : current);
+      }, 4200);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown connection error.";
+      setMessages((current) => [...current, {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: "I couldn't complete that request. " + message + " Check that your GLM server is running at 127.0.0.1:8080."
+      }]);
+      setMode("standby");
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   useEffect(() => {
     if (!orbStage.current) return undefined;
@@ -556,6 +652,48 @@ export default function App() {
       <div className="ambient ambient-two" />
       <div className="orb-halo" />
       <div className="orb-stage" ref={orbStage} />
+
+      <section className="assistant-console" aria-label="Talk to PARALLAX">
+        {messages.length > 0 && (
+          <div className="conversation" aria-live="polite" aria-relevant="additions">
+            {messages.slice(-5).map((message) => (
+              <div className={"chat-message " + message.role} key={message.id}>
+                <span className="message-role">{message.role === "user" ? "YOU" : "PARALLAX"}</span>
+                <p>{message.content}</p>
+              </div>
+            ))}
+            <div className="conversation-end" />
+          </div>
+        )}
+        <form className="composer" onSubmit={sendMessage}>
+          <div className="composer-meta">
+            <span className={"connection-dot " + connection.status} />
+            <span>
+              {connection.status === "online"
+                ? "GLM CONNECTED · " + model
+                : connection.status === "connecting"
+                  ? "CONNECTING TO GLM"
+                  : "GLM OFFLINE · CHECK LOCAL SERVER"}
+            </span>
+          </div>
+          <div className="composer-input-row">
+            <input
+              value={draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                if (!isSending) setMode(event.target.value.trim() ? "listening" : "standby");
+              }}
+              onFocus={() => { if (draft.trim() && !isSending) setMode("listening"); }}
+              placeholder="Message PARALLAX..."
+              aria-label="Message PARALLAX"
+              autoComplete="off"
+            />
+            <button type="submit" aria-label="Send message" disabled={!draft.trim() || isSending}>
+              {isSending ? <span className="send-spinner" /> : "↑"}
+            </button>
+          </div>
+        </form>
+      </section>
     </main>
   );
 }
