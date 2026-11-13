@@ -8,7 +8,7 @@ const MODES = {
     color: "violet",
     speed: 1,
     energy: 0.48,
-    palette: ["#a78bfa", "#65d8f2", "#e4d9ff"],
+    palette: ["#4b85e8", "#55dfff", "#dff8ff"],
   },
   listening: {
     label: "LISTENING",
@@ -16,7 +16,7 @@ const MODES = {
     color: "cyan",
     speed: 1.35,
     energy: 0.78,
-    palette: ["#68e2ff", "#6a9bff", "#d6f8ff"],
+    palette: ["#37c8f0", "#4f9dff", "#e1fbff"],
   },
   thinking: {
     label: "PROCESSING",
@@ -24,7 +24,7 @@ const MODES = {
     color: "violet",
     speed: 1.8,
     energy: 1,
-    palette: ["#b69aff", "#657bff", "#f1e8ff"],
+    palette: ["#7168e8", "#42bfff", "#eeeaff"],
   },
   speaking: {
     label: "RESPONDING",
@@ -32,7 +32,7 @@ const MODES = {
     color: "blue",
     speed: 1.5,
     energy: 0.86,
-    palette: ["#8cbbff", "#8b83ff", "#e4eeff"],
+    palette: ["#4e91f0", "#69dfff", "#e3f6ff"],
   },
 };
 
@@ -235,18 +235,82 @@ function makeOrbScene(host, modeRef) {
   core.renderOrder = 2;
   root.add(core);
 
-  const innerShell = new THREE.Mesh(
-    new THREE.SphereGeometry(1.405, 112, 112),
-    new THREE.MeshBasicMaterial({
-      color: "#c6bdff",
-      transparent: true,
-      opacity: 0.035,
-      wireframe: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    })
-  );
+  const facetSource = new THREE.IcosahedronGeometry(1.08, 2);
+  const facetEdges = new THREE.EdgesGeometry(facetSource, 8);
+  facetSource.dispose();
+
+  const facetMaterial = new THREE.LineBasicMaterial({
+    color: "#8adfff",
+    transparent: true,
+    opacity: 0.22,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const innerShell = new THREE.LineSegments(facetEdges, facetMaterial);
   root.add(innerShell);
+
+  const nodePositions = [];
+  const nodeCount = 42;
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < nodeCount; i++) {
+    const y = 1 - (i / (nodeCount - 1)) * 2;
+    const radius = Math.sqrt(1 - y * y);
+    const theta = goldenAngle * i;
+    nodePositions.push(
+      Math.cos(theta) * radius * 1.085,
+      y * 1.085,
+      Math.sin(theta) * radius * 1.085
+    );
+  }
+  const nodeGeometry = new THREE.BufferGeometry();
+  nodeGeometry.setAttribute("position", new THREE.Float32BufferAttribute(nodePositions, 3));
+  const nodeMaterial = new THREE.PointsMaterial({
+    color: "#d5f5ff",
+    size: 0.026,
+    transparent: true,
+    opacity: 0.76,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    sizeAttenuation: true,
+  });
+  const facetNodes = new THREE.Points(nodeGeometry, nodeMaterial);
+  root.add(facetNodes);
+
+  const fiberGroup = new THREE.Group();
+  const fiberMaterial = new THREE.MeshBasicMaterial({
+    color: "#65dfff",
+    transparent: true,
+    opacity: 0.24,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const fiberCount = 26;
+  for (let i = 0; i < fiberCount; i++) {
+    const y = 1 - ((i + 0.5) / fiberCount) * 2;
+    const radius = Math.sqrt(1 - y * y);
+    const theta = goldenAngle * i + 0.3;
+    const direction = new THREE.Vector3(
+      Math.cos(theta) * radius,
+      y,
+      Math.sin(theta) * radius
+    ).normalize();
+    const tangent = new THREE.Vector3(-direction.z, 0, direction.x);
+    if (tangent.lengthSq() < 0.001) tangent.set(1, 0, 0);
+    tangent.normalize();
+    const bend = Math.sin(i * 7.31) * 0.105;
+    const points = [
+      direction.clone().multiplyScalar(0.48),
+      direction.clone().multiplyScalar(0.66).addScaledVector(tangent, bend),
+      direction.clone().multiplyScalar(0.91).addScaledVector(tangent, -bend * 0.72),
+      direction.clone().multiplyScalar(1.075),
+    ];
+    const curve = new THREE.CatmullRomCurve3(points);
+    const fiberGeometry = new THREE.TubeGeometry(curve, 28, 0.0032, 5, false);
+    const fiber = new THREE.Mesh(fiberGeometry, fiberMaterial);
+    fiberGroup.add(fiber);
+  }
+  root.add(fiberGroup);
 
   const aura = new THREE.Mesh(
     new THREE.SphereGeometry(1.56, 80, 80),
@@ -287,31 +351,31 @@ function makeOrbScene(host, modeRef) {
       side: THREE.DoubleSide,
     });
 
-  const ringA = new THREE.Mesh(new THREE.TorusGeometry(1.82, 0.009, 8, 260), ringMaterial("#9c91ff", 0.55));
+  const ringA = new THREE.Mesh(new THREE.TorusGeometry(1.82, 0.008, 8, 260, Math.PI * 1.72), ringMaterial("#79cfff", 0.48));
   ringA.rotation.set(1.14, 0.18, 0.2);
   root.add(ringA);
 
-  const ringB = new THREE.Mesh(new THREE.TorusGeometry(2.02, 0.0045, 8, 260), ringMaterial("#70dfff", 0.36));
+  const ringB = new THREE.Mesh(new THREE.TorusGeometry(2.02, 0.0045, 8, 260, Math.PI * 1.38), ringMaterial("#66e5ff", 0.34));
   ringB.rotation.set(0.42, 1.02, -0.38);
   root.add(ringB);
 
-  const ringC = new THREE.Mesh(new THREE.TorusGeometry(1.68, 0.003, 8, 260), ringMaterial("#d6c9ff", 0.22));
+  const ringC = new THREE.Mesh(new THREE.TorusGeometry(1.68, 0.003, 8, 260, Math.PI * 1.55), ringMaterial("#c8eaff", 0.25));
   ringC.rotation.set(1.55, -0.64, 0.9);
   root.add(ringC);
 
   const orbitPoints = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const angle = (i / 3) * Math.PI * 2;
     const dot = new THREE.Mesh(
-      new THREE.SphereGeometry(i === 0 ? 0.035 : 0.022, 16, 16),
+      new THREE.SphereGeometry(i === 0 ? 0.034 : 0.019, 16, 16),
       new THREE.MeshBasicMaterial({
-        color: i === 1 ? "#8cecff" : "#d5ccff",
+        color: i % 2 === 1 ? "#8cecff" : "#d5ccff",
         transparent: true,
         opacity: 0.94,
       })
     );
     root.add(dot);
-    orbitPoints.push({ mesh: dot, angle, radius: 1.98 + i * 0.035, speed: 0.24 + i * 0.08, tilt: i * 0.75 });
+    orbitPoints.push({ mesh: dot, angle, radius: 1.93 + i * 0.045, speed: 0.18 + i * 0.055, tilt: i * 0.62 });
   }
 
   const particleCount = 680;
@@ -423,6 +487,13 @@ function makeOrbScene(host, modeRef) {
     ringA.rotation.z += 0.0018 * activeMode.speed;
     ringB.rotation.x -= 0.0011 * activeMode.speed;
     ringC.rotation.y += 0.0012 * activeMode.speed;
+    innerShell.rotation.y -= 0.0019 * activeMode.speed;
+    innerShell.rotation.x = Math.sin(time * 0.18) * 0.12;
+    facetNodes.rotation.copy(innerShell.rotation);
+    fiberGroup.rotation.y += 0.0012 * activeMode.speed;
+    fiberGroup.rotation.z = Math.sin(time * 0.14) * 0.045;
+    facetMaterial.opacity = 0.19 + Math.sin(time * 1.1) * 0.035 * activeMode.energy;
+    fiberMaterial.opacity = 0.17 + Math.sin(time * 1.45 + 0.8) * 0.07 * activeMode.energy;
     particles.rotation.y -= 0.00035 * activeMode.speed;
     particles.rotation.x = Math.sin(time * 0.12) * 0.06;
 
@@ -450,7 +521,11 @@ function makeOrbScene(host, modeRef) {
     core.geometry.dispose();
     coreMaterial.dispose();
     innerShell.geometry.dispose();
-    innerShell.material.dispose();
+    facetMaterial.dispose();
+    nodeGeometry.dispose();
+    nodeMaterial.dispose();
+    fiberGroup.children.forEach((fiber) => fiber.geometry.dispose());
+    fiberMaterial.dispose();
     aura.geometry.dispose();
     aura.material.dispose();
     [ringA, ringB, ringC].forEach((ring) => {
