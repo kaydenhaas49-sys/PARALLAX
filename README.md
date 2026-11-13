@@ -1,27 +1,25 @@
 # PARALLAX
 
-A minimal, local-first visual prototype for PARALLAX: an independent situational-intelligence project.
-
-The interface is intentionally just the animated 3D orb. There are no dashboards, panels, labels, or on-screen controls.
+A minimal, local-first AI assistant with a reactive Three.js orb interface, powered by your local GLM model.
 
 ## Included
 
-- React + Vite application
-- Three.js shader-driven orb with animated internal light patterns
-- Subtle orbital rings, particles, and atmospheric glow
-- Four visual states accessible through keyboard shortcuts:
+- React + Vite application with a Three.js cinematic orb
+- Local GLM chat through an OpenAI-compatible API
+- Conversation history for the current session
+- Orb states react to the conversation:
   - `1` — Standby
   - `2` — Listening
   - `3` — Thinking
   - `4` — Speaking
   - `Escape` — Standby
-
-The states currently change the visualization only. Microphone, speech recognition, reasoning, memory, and perception services are not connected yet.
+- The GLM API is accessed through a local Vite proxy; the browser does not call a cloud service.
 
 ## Requirements
 
 - Node.js 20 or newer
 - npm
+- Your GLM server running locally with an OpenAI-compatible API on port `8080`
 
 ## Run locally on Linux
 
@@ -29,12 +27,13 @@ The states currently change the visualization only. Microphone, speech recogniti
 git clone https://github.com/kaydenhaas49-sys/PARALLAX.git
 cd PARALLAX
 npm install
+cp .env.example .env
 npm run dev
 ```
 
 Open **http://127.0.0.1:4174**.
 
-The development server binds to localhost and uses strict port checking.
+By default, PARALLAX expects GLM at `http://127.0.0.1:8080` and discovers the model ID from `/v1/models`. Set `GLM_BASE_URL` in `.env` if your local GLM API uses a different base address. The base address should not include the `/v1` suffix.
 
 ## Production build
 
@@ -43,4 +42,4 @@ npm run build
 npm run preview
 ```
 
-Production files are written to `dist/`.
+The preview server also proxies GLM locally. Production files are written to `dist/`.
