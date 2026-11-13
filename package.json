@@ -7,7 +7,8 @@
     "dev": "vite --host 127.0.0.1 --port 4174 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4174 --strictPort",
-    "voice": "./.venv-tts/bin/python tts_server.py"
+    "voice": "./.venv-tts/bin/python tts_server.py",
+    "voice-design:audition": "./.venv-voice-design/bin/python voice_design.py"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
