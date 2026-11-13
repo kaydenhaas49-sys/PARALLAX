@@ -3,12 +3,12 @@
 export const PARALLAX_VOICE = Object.freeze({
   id: "bf_emma",
   name: "Emma (British English)",
-  normalSpeed: 0.98,
-  urgentSpeed: 1.14,
+  normalSpeed: 0.86,
+  urgentSpeed: 0.94,
 });
 
 const URGENT_CONTEXT =
-  /\b(urgent|urgently|emergency|critical|danger|immediately|right now|asap|mayday|distress|warning|failing|losing altitude|losing control|thruster gave out|thruster failure|engine failure|engine out|power loss|rapid descent|under attack|need help|help me now)\b/i;
+  /\b(mayday|sos|immediate evacuation|evacuate now|life support failure|cabin breach|collision imminent|engine failure|reactor failure|losing altitude|losing control|under attack|help me now)\b/i;
 
 export function isUrgentSpeech(userText = "", assistantText = "") {
   return URGENT_CONTEXT.test(userText) || URGENT_CONTEXT.test(assistantText);
