@@ -182,7 +182,7 @@ const coreFragmentShader = `
 function makeOrbScene(host, modeRef) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-  camera.position.set(0, 0, 6.6);
+  camera.position.set(0, 0, 7.05);
 
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -230,7 +230,6 @@ function makeOrbScene(host, modeRef) {
     depthWrite: false,
     depthTest: false,
     blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
   });
   const core = new THREE.Mesh(new THREE.SphereGeometry(0.82, 128, 128), coreMaterial);
   core.renderOrder = 2;
@@ -400,6 +399,10 @@ function makeOrbScene(host, modeRef) {
       orbMaterial.uniforms.uEnergy.value,
       activeMode.energy,
       0.035
+    );    coreMaterial.uniforms.uEnergy.value = THREE.MathUtils.lerp(
+      coreMaterial.uniforms.uEnergy.value,
+      activeMode.energy,
+      0.04
     );
 
     const targetColors = activeMode.palette.map((hex) => new THREE.Color(hex));
