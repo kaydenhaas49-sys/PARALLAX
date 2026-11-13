@@ -1,13 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Activity,
-  AudioLines,
-  BrainCircuit,
-  CircleStop,
-  Mic,
-  Orbit,
-  Radio,
-} from "lucide-react";
 import * as THREE from "three";
 
 const MODES = {
@@ -124,7 +115,7 @@ const fragmentShader = `
 function makeOrbScene(host, modeRef) {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-  camera.position.set(0, 0, 7.2);
+  camera.position.set(0, 0, 6.6);
 
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -161,7 +152,7 @@ function makeOrbScene(host, modeRef) {
     new THREE.MeshBasicMaterial({
       color: "#c6bdff",
       transparent: true,
-      opacity: 0.075,
+      opacity: 0.04,
       wireframe: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -235,7 +226,7 @@ function makeOrbScene(host, modeRef) {
     orbitPoints.push({ mesh: dot, angle, radius: 1.77 + i * 0.035, speed: 0.24 + i * 0.08, tilt: i * 0.75 });
   }
 
-  const particleCount = 1450;
+  const particleCount = 680;
   const particlePositions = new Float32Array(particleCount * 3);
   const particleSizes = new Float32Array(particleCount);
   for (let i = 0; i < particleCount; i++) {
@@ -263,7 +254,7 @@ function makeOrbScene(host, modeRef) {
   const particles = new THREE.Points(particleGeometry, particleMaterial);
   root.add(particles);
 
-  const starsCount = 260;
+  const starsCount = 110;
   const starPositions = new Float32Array(starsCount * 3);
   for (let i = 0; i < starsCount; i++) {
     starPositions[i * 3] = (Math.random() - 0.5) * 12;
@@ -381,7 +372,7 @@ function makeOrbScene(host, modeRef) {
 
 export default function App() {
   const [mode, setMode] = useState("standby");
-  const canvasHost = useRef(null);
+  const orbStage = useRef(null);
   const modeRef = useRef(mode);
 
   useEffect(() => {
@@ -389,89 +380,33 @@ export default function App() {
   }, [mode]);
 
   useEffect(() => {
-    if (!canvasHost.current) return undefined;
-    return makeOrbScene(canvasHost.current, modeRef);
+    if (!orbStage.current) return undefined;
+    return makeOrbScene(orbStage.current, modeRef);
   }, []);
 
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-      const shortcuts = { "1": "standby", "2": "listening", "3": "thinking", "4": "speaking", Escape: "standby" };
+      const shortcuts = {
+        "1": "standby",
+        "2": "listening",
+        "3": "thinking",
+        "4": "speaking",
+        Escape: "standby",
+      };
       if (shortcuts[event.key]) setMode(shortcuts[event.key]);
     };
+
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const current = MODES[mode];
-
   return (
-    <main className={`app mode-${mode}`}>
-      <div className="background-glow background-glow-a" />
-      <div className="background-glow background-glow-b" />
-      <div className="grain" />
-
-      <header className="topbar">
-        <a className="brand" href="#" aria-label="PARALLAX home">
-          <span className="brand-mark"><Orbit size={19} strokeWidth={1.6} /></span>
-          <span className="brand-copy">
-            <span className="brand-name">PARALLAX</span>
-            <span className="brand-subtitle">INDEPENDENT INTELLIGENCE</span>
-          </span>
-        </a>
-        <div className="connection-state">
-          <span className="connection-dot" />
-          <span>LOCAL INTERFACE</span>
-        </div>
-      </header>
-
-      <section className="experience" aria-label="PARALLAX animated orb">
-        <div className="orb-stage">
-          <div className="orb-vignette" />
-          <div className="orb-canvas" ref={canvasHost} />
-          <div className="orb-floor" />
-        </div>
-
-        <div className="readout">
-          <div className="readout-overline">
-            <span className="readout-line" />
-            <span>CORE VISUALIZATION</span>
-            <span className="readout-line" />
-          </div>
-          <div className="state-title">{current.label}</div>
-          <div className="state-detail">{current.detail}</div>
-        </div>
-      </section>
-
-      <footer className="bottom-area">
-        <div className="controls-label">
-          <span>VISUAL STATES</span>
-          <span className="keyboard-hint">KEYS 1—4</span>
-        </div>
-        <nav className="control-dock" aria-label="Orb visual states">
-          <button className={mode === "standby" ? "control active" : "control"} onClick={() => setMode("standby")} aria-pressed={mode === "standby"}>
-            <CircleStop size={16} strokeWidth={1.7} />
-            <span>Standby</span>
-          </button>
-          <button className={mode === "listening" ? "control active" : "control"} onClick={() => setMode("listening")} aria-pressed={mode === "listening"}>
-            <Mic size={16} strokeWidth={1.7} />
-            <span>Listen</span>
-          </button>
-          <button className={mode === "thinking" ? "control active" : "control"} onClick={() => setMode("thinking")} aria-pressed={mode === "thinking"}>
-            <BrainCircuit size={16} strokeWidth={1.7} />
-            <span>Think</span>
-          </button>
-          <button className={mode === "speaking" ? "control active" : "control"} onClick={() => setMode("speaking")} aria-pressed={mode === "speaking"}>
-            <AudioLines size={16} strokeWidth={1.7} />
-            <span>Speak</span>
-          </button>
-        </nav>
-        <div className="footnote">
-          <Radio size={12} />
-          <span>INTERFACE PREVIEW · AI AND MICROPHONE NOT CONNECTED</span>
-          <Activity size={12} />
-        </div>
-      </footer>
+    <main className={"app mode-" + mode} aria-label="PARALLAX">
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
+      <div className="orb-halo" />
+      <div className="orb-stage" ref={orbStage} />
     </main>
   );
 }
