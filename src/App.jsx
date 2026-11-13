@@ -588,6 +588,10 @@ export default function App() {
 
   const stopSpeech = () => {
     speechRequestRef.current += 1;
+    if (speakingTimer.current) {
+      window.clearTimeout(speakingTimer.current);
+      speakingTimer.current = null;
+    }
     clearSpeech();
   };
 
