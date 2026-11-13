@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate a more relaxed, witty PARALLAX voice-design audition with Qwen3-TTS.
+"""Generate a casual, blunt, funny PARALLAX voice-design audition with Qwen3-TTS.
 
-This is an original synthetic voice design. It does not use reference audio
-or imitate a named actor or fictional character.
+This is an original synthetic voice and conversational style. It does not use
+reference audio or imitate the user's personal voice or any named performer.
 """
 from __future__ import annotations
 
@@ -14,33 +14,40 @@ from pathlib import Path
 MODEL_ID = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
 VOICE_DESCRIPTION = (
     "Create an original feminine adult English voice for a clever onboard "
-    "AI assistant. She sounds like a capable, quick-witted person who is "
-    "comfortable in her own skin: relaxed, friendly, lightly playful, and "
-    "naturally conversational. Her humour is dry and understated, with a "
-    "hint of cheekiness, never exaggerated or cartoonish. Use a clear, "
-    "natural medium register with an easy, bright tone. Avoid a deliberately "
-    "low, husky, breathy, intimate, sultry, flirtatious, or seductive sound. "
-    "Do not make her sound like a formal presenter, corporate receptionist, "
-    "newsreader, or stern navigation computer. Keep the accent lightly "
-    "Irish-English, subtle and easy to understand. Speak at a comfortable "
-    "conversational pace, with natural rhythm, small expressive shifts, and "
-    "the occasional understated amused note. She can sound genuinely pleased, "
-    "mildly unimpressed, or playfully sarcastic when the words call for it, "
-    "but never overact. Stay clear and composed when delivering important "
-    "alerts. Keep the recording clean and dry, without room ambience or "
-    "reverb. Do not vocalize breathing: no audible inhalations, exhalations, "
-    "sighs, gasps, lip smacks, clicks, or other mouth noises. No whispering, "
-    "vocal fry, or artificial seductive texture. This is an original voice, "
-    "not an imitation of any specific actor or fictional character."
+    "AI assistant. Her personality is casual, direct, quick-witted, and "
+    "slightly chaotic in a fun way. She talks like a real person chatting "
+    "with a familiar teammate, not like a customer-service agent or a "
+    "professional presenter. Use everyday modern conversational English, "
+    "contractions, informal phrasing, and occasional current casual slang "
+    "where it fits naturally. She is comfortable using mild-to-moderate "
+    "swearing naturally, including words like damn, hell, and shit. Do not "
+    "force profanity into every sentence or make it her whole personality. "
+    "Her humour is dry, cheeky, blunt, and sometimes playfully sarcastic. "
+    "She can react with genuine amusement, mild disbelief, or an occasional "
+    "exasperated 'seriously?' without sounding mean. Keep it spontaneous "
+    "and laid-back, but still smart, capable, and dependable. Use a clear, "
+    "natural feminine medium register with an easy, bright tone. Avoid a "
+    "low, husky, breathy, intimate, sultry, flirtatious, seductive, or "
+    "overly polished sound. Keep the accent lightly Irish-English, subtle "
+    "and easy to understand. Speak at a relaxed conversational pace with "
+    "natural rhythm and expressive variation, never rushed or announcer-like. "
+    "When something important happens, she gets focused without suddenly "
+    "turning into a stiff corporate assistant. Keep the recording clean and "
+    "dry, without room ambience or reverb. Do not vocalize breathing: no "
+    "audible inhalations, exhalations, sighs, gasps, lip smacks, clicks, or "
+    "other mouth noises. No whispering or artificial seductive texture. "
+    "This is an original voice design, not a copy of anyone's personal voice "
+    "or any specific actor or fictional character."
 )
 AUDITION_TEXT = (
-    "Morning. Good news: everything is online and behaving itself. "
-    "For now, anyway. "
-    "Your next appointment starts in twenty minutes. I've put the details "
-    "on your display, so there's no need to pretend you remembered. "
-    "Quick heads-up. There's something blocking the route ahead. "
-    "I'd suggest turning left. Trust me, arguing with the wall won't help. "
-    "New route is ready. Shall we give that one a try?"
+    "Oh, morning. You're alive. Excellent start. Everything's online, "
+    "and somehow nothing's on fire. Let's keep it that way. "
+    "You've got a meeting in twenty minutes. I put the details on your "
+    "display because, let's be honest, you were probably going to forget. "
+    "Uh, tiny problem. There's a massive obstruction right in front of us. "
+    "We could turn left, or we could keep driving into it like absolute "
+    " geniuses. I'd vote left. "
+    "There. New route sorted. See? We're kind of a great team."
 )
 
 
@@ -51,10 +58,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("voice-auditions/parallax-qwen3-voice-design-v3.wav"),
+        default=Path("voice-auditions/parallax-qwen3-voice-design-v4.wav"),
         help=(
             "WAV output path "
-            "(default: voice-auditions/parallax-qwen3-voice-design-v3.wav)"
+            "(default: voice-auditions/parallax-qwen3-voice-design-v4.wav)"
         ),
     )
     parser.add_argument(
@@ -65,8 +72,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--seed",
         type=int,
-        default=41,
-        help="Generation seed for a repeatable starting point (default: 41)",
+        default=53,
+        help="Generation seed for a repeatable starting point (default: 53)",
     )
     return parser.parse_args()
 
@@ -121,13 +128,13 @@ def main() -> int:
         attn_implementation="sdpa",
     )
 
-    print("Designing the relaxed PARALLAX v3 audition...", flush=True)
+    print("Designing the casual PARALLAX v4 audition...", flush=True)
     wavs, sample_rate = model.generate_voice_design(
         text=AUDITION_TEXT,
         language="English",
         instruct=VOICE_DESCRIPTION,
         do_sample=True,
-        temperature=0.55,
+        temperature=0.6,
     )
     if not wavs or wavs[0] is None:
         raise RuntimeError("Qwen3-TTS returned no audio.")
@@ -136,11 +143,11 @@ def main() -> int:
     sf.write(args.output, wavs[0], sample_rate)
     sidecar = args.output.with_suffix(".txt")
     sidecar.write_text(
-        "PARALLAX original voice-design audition — version 3\n"
+        "PARALLAX original voice-design audition — version 4\n"
         f"Model: {MODEL_ID}\n"
         f"Device: {device}\n"
         f"Seed: {args.seed}\n"
-        "Temperature: 0.55\n\n"
+        "Temperature: 0.6\n\n"
         "VOICE DESCRIPTION\n"
         f"{VOICE_DESCRIPTION}\n\n"
         "AUDITION TEXT\n"
