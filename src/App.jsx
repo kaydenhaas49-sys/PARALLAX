@@ -383,6 +383,7 @@ function makeOrbScene(host, modeRef) {
   resizeObserver.observe(host);
 
   const clock = new THREE.Clock();
+  let smoothActivity = 0;
   const colors = MODES.standby.colors.map((hex) => new THREE.Color(hex));
   const nextColors = MODES.standby.colors.map((hex) => new THREE.Color(hex));
   let frameId = 0;
@@ -412,11 +413,14 @@ function makeOrbScene(host, modeRef) {
     haloMaterial.color.lerp(colors[0], 0.02);
     lensRimMaterial.color.lerp(colors[2], 0.025);
 
-    const cursorActivity = pointer.activity;
+    // Smooth mouse activity so quick pointer events never jerk the mechanism.
+    smoothActivity = THREE.MathUtils.lerp(smoothActivity, pointer.activity, 0.055);
+    const cursorActivity = smoothActivity;
     pointer.vx *= 0.88;
     pointer.vy *= 0.88;
-    pointer.activity *= 0.91;
-    rotor.rotation.z = time * 0.135 * (1 + cursorActivity * 0.18);
+    pointer.activity *= 0.84;
+    // Keep the turbine's rotation constant; cursor movement should not change its speed.
+    rotor.rotation.z = time * 0.135;
     rotor.rotation.y = Math.sin(time * 0.19) * 0.055 + pointer.x * 0.035;
     rotor.rotation.x = Math.cos(time * 0.17) * 0.035 + pointer.y * 0.025;
     bladeHolders.forEach((holder, i) => {
@@ -433,10 +437,10 @@ function makeOrbScene(host, modeRef) {
       holder.position.z = Math.sin(time * 0.5 + i * 2.1) * 0.018;
     });
     // Smoothly drift toward the cursor, with enough restraint to keep the orb framed.
-    root.position.x = THREE.MathUtils.lerp(root.position.x, pointer.x * 0.62, 0.035);
-    root.position.y = THREE.MathUtils.lerp(root.position.y, -pointer.y * 0.5, 0.035);
-    root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, pointer.x * 0.16, 0.035);
-    root.rotation.x = THREE.MathUtils.lerp(root.rotation.x, -pointer.y * 0.12, 0.035);
+    root.position.x = THREE.MathUtils.lerp(root.position.x, pointer.x * 0.62, 0.022);
+    root.position.y = THREE.MathUtils.lerp(root.position.y, -pointer.y * 0.5, 0.022);
+    root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, pointer.x * 0.16, 0.022);
+    root.rotation.x = THREE.MathUtils.lerp(root.rotation.x, -pointer.y * 0.12, 0.022);
     root.scale.setScalar(
       1 + Math.sin(time * 1.1 * mode.speed) * 0.008 * energy + cursorActivity * 0.012
     );
