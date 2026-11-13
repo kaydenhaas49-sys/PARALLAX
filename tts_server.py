@@ -18,10 +18,9 @@ import soundfile as sf
 HOST = "127.0.0.1"
 PORT = int(os.environ.get("PARALLAX_TTS_PORT", "7861"))
 DEVICE = os.environ.get("PARALLAX_TTS_DEVICE", "cpu")
-DEFAULT_VOICE = "af_kore"
+DEFAULT_VOICE = "bf_emma"
 ALLOWED_VOICES = {
-    "af_nicole", "af_heart", "af_aoede", "af_kore", "af_sarah",
-    "af_jessica", "af_bella", "af_sky",
+    "bf_alice", "bf_emma", "bf_isabella", "bf_lily",
 }
 SAMPLE_RATE = 24000
 PIPELINE = None
@@ -34,7 +33,7 @@ def get_pipeline():
         from kokoro import KPipeline
 
         print("Loading Kokoro on " + DEVICE + "...", flush=True)
-        PIPELINE = KPipeline(lang_code="a", device=DEVICE)
+        PIPELINE = KPipeline(lang_code="b", device=DEVICE)
         PIPELINE.load_voice(DEFAULT_VOICE)
         print("Kokoro is ready.", flush=True)
     return PIPELINE
