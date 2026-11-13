@@ -416,7 +416,7 @@ function makeOrbScene(host, modeRef) {
     pointer.vx *= 0.88;
     pointer.vy *= 0.88;
     pointer.activity *= 0.91;
-    rotor.rotation.z = time * 0.045 * (1 + cursorActivity * 0.18);
+    rotor.rotation.z = time * 0.135 * (1 + cursorActivity * 0.18);
     rotor.rotation.y = Math.sin(time * 0.19) * 0.055 + pointer.x * 0.035;
     rotor.rotation.x = Math.cos(time * 0.17) * 0.035 + pointer.y * 0.025;
     bladeHolders.forEach((holder, i) => {
