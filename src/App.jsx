@@ -355,14 +355,20 @@ function makeOrbScene(host, modeRef) {
   }
 
   // Track the cursor across the whole window so the orb can physically follow it.
-  const pointer = { x: 0, y: 0 };
+  const pointer = { x: 0, y: 0, vx: 0, vy: 0, activity: 0 };
   const onPointerMove = (event) => {
     pointer.x = (event.clientX / Math.max(1, window.innerWidth) - 0.5) * 2;
     pointer.y = (event.clientY / Math.max(1, window.innerHeight) - 0.5) * 2;
+    pointer.vx = THREE.MathUtils.clamp(event.movementX / 34, -1, 1);
+    pointer.vy = THREE.MathUtils.clamp(event.movementY / 34, -1, 1);
+    pointer.activity = Math.min(1, Math.hypot(pointer.vx, pointer.vy));
   };
   const onPointerLeave = () => {
     pointer.x = 0;
     pointer.y = 0;
+    pointer.vx = 0;
+    pointer.vy = 0;
+    pointer.activity = 0;
   };
   window.addEventListener("pointermove", onPointerMove);
   document.documentElement.addEventListener("pointerleave", onPointerLeave);
@@ -402,7 +408,11 @@ function makeOrbScene(host, modeRef) {
     haloMaterial.color.lerp(colors[0], 0.02);
     lensRimMaterial.color.lerp(colors[2], 0.025);
 
-    rotor.rotation.z = time * 0.075 * mode.speed;
+    const cursorActivity = pointer.activity;
+    pointer.vx *= 0.88;
+    pointer.vy *= 0.88;
+    pointer.activity *= 0.91;
+    rotor.rotation.z += 0.075 * mode.speed * (1 + cursorActivity * 1.8) * (1 / 60);
     rotor.rotation.y = Math.sin(time * 0.19) * 0.055 + pointer.x * 0.035;
     rotor.rotation.x = Math.cos(time * 0.17) * 0.035 + pointer.y * 0.025;
     bladeHolders.forEach((holder, i) => {
@@ -423,7 +433,20 @@ function makeOrbScene(host, modeRef) {
     root.position.y = THREE.MathUtils.lerp(root.position.y, -pointer.y * 0.5, 0.035);
     root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, pointer.x * 0.16, 0.035);
     root.rotation.x = THREE.MathUtils.lerp(root.rotation.x, -pointer.y * 0.12, 0.035);
-    root.scale.setScalar(1 + Math.sin(time * 1.1 * mode.speed) * 0.008 * energy);
+    root.scale.setScalar(
+      1 + Math.sin(time * 1.1 * mode.speed) * 0.008 * energy + cursorActivity * 0.012
+    );
+
+    // The eye tracks the cursor independently, while movement gives the core a quick response.
+    const eyeX = pointer.x * 0.075;
+    const eyeY = -pointer.y * 0.075;
+    pupil.position.x = THREE.MathUtils.lerp(pupil.position.x, eyeX, 0.12);
+    pupil.position.y = THREE.MathUtils.lerp(pupil.position.y, eyeY, 0.12);
+    pupilHalo.position.x = THREE.MathUtils.lerp(pupilHalo.position.x, eyeX * 0.72, 0.1);
+    pupilHalo.position.y = THREE.MathUtils.lerp(pupilHalo.position.y, eyeY * 0.72, 0.1);
+    heart.position.x = THREE.MathUtils.lerp(heart.position.x, eyeX * 0.42, 0.08);
+    heart.position.y = THREE.MathUtils.lerp(heart.position.y, eyeY * 0.42, 0.08);
+    pupilHalo.material.opacity = 0.12 + cursorActivity * 0.12;
 
     lens.rotation.y = time * 0.045 * mode.speed;
     lens.rotation.x = Math.sin(time * 0.22) * 0.035;
@@ -440,7 +463,9 @@ function makeOrbScene(host, modeRef) {
       marker.rotation.set(time * 0.4, time * 0.6, time * 0.3);
     });
 
-    keyLight.intensity = 42 + energy * 16;
+    keyLight.intensity = 42 + energy * 16 + cursorActivity * 18;
+    coolRim.intensity = 28 + energy * 8 + cursorActivity * 12;
+    heartMaterial.uniforms.uEnergy.value += cursorActivity * 0.08;
     renderer.render(scene, camera);
   };
   animate();
