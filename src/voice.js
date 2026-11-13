@@ -8,7 +8,7 @@ export const PARALLAX_VOICE = Object.freeze({
 });
 
 const URGENT_CONTEXT =
-  /\\b(urgent|urgently|emergency|critical|danger|immediately|right now|asap|mayday|distress|warning|failing|losing altitude|losing control|thruster gave out|thruster failure|engine failure|engine out|power loss|rapid descent|under attack|need help|help me now)\\b/i;
+  /\b(urgent|urgently|emergency|critical|danger|immediately|right now|asap|mayday|distress|warning|failing|losing altitude|losing control|thruster gave out|thruster failure|engine failure|engine out|power loss|rapid descent|under attack|need help|help me now)\b/i;
 
 export function isUrgentSpeech(userText = "", assistantText = "") {
   return URGENT_CONTEXT.test(userText) || URGENT_CONTEXT.test(assistantText);
@@ -16,16 +16,16 @@ export function isUrgentSpeech(userText = "", assistantText = "") {
 
 export function cleanSpeechText(value = "") {
   return String(value)
-    .replace(/\\x60{3}[\\s\\S]*?\\x60{3}/g, "Code block omitted.")
-    .replace(/\\[([^\\]]+)\\]\\([^)]+\\)/g, "$1")
-    .replace(/https?:\\/\\/\\S+/g, "")
-    .replace(/^\\s{0,3}#{1,6}\\s+/gm, "")
-    .replace(/\\*\\*(.*?)\\*\\*/g, "$1")
-    .replace(/\\*(.*?)\\*/g, "$1")
+    .replace(/\x60{3}[\s\S]*?\x60{3}/g, "Code block omitted.")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
     .replace(/__(.*?)__/g, "$1")
     .replace(/_(.*?)_/g, "$1")
-    .replace(/\\x60([^\\x60]+)\\x60/g, "$1")
-    .replace(/\\n{3,}/g, "\\n\\n")
+    .replace(/\x60([^\x60]+)\x60/g, "$1")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
