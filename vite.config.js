@@ -9,6 +9,12 @@ export default defineConfig(({ mode }) => {
     changeOrigin: true,
     rewrite: (path) => path.replace(/^\/api\/glm/, "/v1"),
   };
+  const ttsTarget = (env.PARALLAX_TTS_BASE_URL || "http://127.0.0.1:7861").replace(/\/$/, "");
+  const ttsProxy = {
+    target: ttsTarget,
+    changeOrigin: true,
+    rewrite: (path) => path.replace(/^\/api\/tts/, ""),
+  };
 
   return {
     plugins: [react()],
@@ -16,7 +22,7 @@ export default defineConfig(({ mode }) => {
       host: "127.0.0.1",
       port: 4174,
       strictPort: true,
-      proxy: { "/api/glm": glmProxy },
+      proxy: { "/api/glm": glmProxy, "/api/tts": ttsProxy },
     },
     preview: {
       host: "127.0.0.1",
