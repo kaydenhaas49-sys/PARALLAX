@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { Volume2, VolumeX } from "lucide-react";
+import { isUrgentSpeech, synthesizeSpeech } from "./voice.js";
 
 const MODES = {
   standby: { speed: 0.28, energy: 0.34, colors: ["#173d55", "#42d6e7", "#e7fbff"] },
@@ -527,8 +529,14 @@ export default function App() {
   const [isSending, setIsSending] = useState(false);
   const [connection, setConnection] = useState({ status: "connecting", model: "" });
   const [model, setModel] = useState("glm");
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceStatus, setVoiceStatus] = useState("unknown");
   const orbStage = useRef(null);
   const speakingTimer = useRef(null);
+  const audioRef = useRef(null);
+  const audioUrlRef = useRef(null);
+  const speechRequestRef = useRef(0);
+  const voiceEnabledRef = useRef(true);
   const modeRef = useRef(mode);
 
   useEffect(() => {
@@ -561,12 +569,69 @@ export default function App() {
 
   useEffect(() => () => {
     if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
+    if (audioRef.current) audioRef.current.pause();
+    if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
   }, []);
+
+  const clearSpeech = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+  };
+
+  const stopSpeech = () => {
+    speechRequestRef.current += 1;
+    clearSpeech();
+  };
+
+  const speakAssistant = async (answer, prompt) => {
+    if (!voiceEnabledRef.current) return;
+    const requestId = ++speechRequestRef.current;
+    setVoiceStatus("loading");
+    try {
+      const audioUrl = await synthesizeSpeech(answer, {
+        urgent: isUrgentSpeech(prompt, answer),
+      });
+      if (!voiceEnabledRef.current || requestId !== speechRequestRef.current) {
+        URL.revokeObjectURL(audioUrl);
+        return;
+      }
+
+      clearSpeech();
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audioUrlRef.current = audioUrl;
+      audio.onended = () => {
+        clearSpeech();
+        setMode((current) => current === "speaking" ? "standby" : current);
+      };
+      audio.onerror = () => {
+        clearSpeech();
+        setVoiceStatus("offline");
+        setMode((current) => current === "speaking" ? "standby" : current);
+      };
+
+      await audio.play();
+      setVoiceStatus("ready");
+      setMode("speaking");
+    } catch {
+      setVoiceStatus("offline");
+      setMode((current) => current === "thinking" ? "standby" : current);
+    }
+  };
 
   const sendMessage = async (event) => {
     event.preventDefault();
     const text = draft.trim();
     if (!text || isSending) return;
+    stopSpeech();
 
     const userMessage = { id: Date.now(), role: "user", content: text };
     const conversation = [...messages, userMessage];
@@ -607,11 +672,15 @@ export default function App() {
       }
 
       setMessages((current) => [...current, { id: Date.now() + 1, role: "assistant", content: answer.trim() }]);
-      setMode("speaking");
-      if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
-      speakingTimer.current = window.setTimeout(() => {
-        setMode((current) => current === "speaking" ? "standby" : current);
-      }, 4200);
+      if (voiceEnabledRef.current) {
+        void speakAssistant(answer.trim(), text);
+      } else {
+        setMode("speaking");
+        if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
+        speakingTimer.current = window.setTimeout(() => {
+          setMode((current) => current === "speaking" ? "standby" : current);
+        }, 4200);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown connection error.";
       setMessages((current) => [...current, {
@@ -688,6 +757,25 @@ export default function App() {
               aria-label="Message PARALLAX"
               autoComplete="off"
             />
+            <button
+              type="button"
+              className={"voice-toggle " + (voiceEnabled ? "enabled" : "muted")}
+              aria-label={voiceEnabled ? "Mute PARALLAX voice" : "Enable PARALLAX voice"}
+              title={voiceStatus === "offline"
+                ? "Local voice engine offline — start npm run voice"
+                : voiceEnabled ? "Mute PARALLAX voice" : "Enable PARALLAX voice"}
+              onClick={() => {
+                const next = !voiceEnabledRef.current;
+                voiceEnabledRef.current = next;
+                setVoiceEnabled(next);
+                if (!next) {
+                  stopSpeech();
+                  setMode("standby");
+                }
+              }}
+            >
+              {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            </button>
             <button type="submit" aria-label="Send message" disabled={!draft.trim() || isSending}>
               {isSending ? <span className="send-spinner" /> : "↑"}
             </button>
