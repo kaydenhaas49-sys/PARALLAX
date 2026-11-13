@@ -1,11 +1,11 @@
 :root {
   color-scheme: dark;
-  background: #02050a;
+  background: #03060b;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --accent: 84, 207, 226;
+  --accent: 75, 208, 230;
 }
 
 * { box-sizing: border-box; }
@@ -20,7 +20,7 @@ html, body, #root {
 
 body {
   overflow: hidden;
-  background: #02050a;
+  background: #03060b;
 }
 
 .app {
@@ -34,92 +34,77 @@ body {
   overflow: hidden;
   place-items: center;
   background:
-    radial-gradient(ellipse at 50% 46%, rgba(8, 34, 48, 0.3), transparent 37%),
-    radial-gradient(ellipse at 50% 100%, rgba(10, 23, 43, 0.18), transparent 56%),
-    #02050a;
-  transition: background 1.4s ease;
-}
-
-.app::before,
-.app::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+    radial-gradient(ellipse at 50% 48%, rgba(12, 42, 55, 0.28), transparent 31%),
+    radial-gradient(ellipse at 50% 53%, rgba(20, 27, 51, 0.18), transparent 56%),
+    linear-gradient(145deg, #050a12 0%, #02050a 48%, #060811 100%);
+  transition: background 1.2s ease;
 }
 
 .app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   z-index: -1;
+  pointer-events: none;
   background:
-    radial-gradient(ellipse at center, transparent 36%, rgba(0, 0, 0, 0.22) 76%, rgba(0, 0, 0, 0.72) 130%),
-    linear-gradient(90deg, transparent 49.95%, rgba(110, 190, 214, 0.025) 50%, transparent 50.05%);
+    radial-gradient(ellipse at center, transparent 28%, rgba(0, 0, 0, 0.22) 68%, rgba(0, 0, 0, 0.72) 120%),
+    linear-gradient(180deg, rgba(3, 9, 16, 0.12), transparent 30%, transparent 72%, rgba(0, 0, 0, 0.24));
 }
 
-.app::after {
-  z-index: -1;
-  opacity: 0.18;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent 0,
-    transparent 3px,
-    rgba(115, 183, 208, 0.025) 4px
-  );
-  mask-image: radial-gradient(ellipse at center, black, transparent 78%);
-}
-
-.app.mode-listening { --accent: 62, 224, 231; }
-.app.mode-thinking { --accent: 142, 128, 255; }
-.app.mode-speaking { --accent: 101, 187, 255; }
+.app.mode-listening { --accent: 65, 231, 225; }
+.app.mode-thinking { --accent: 151, 132, 255; }
+.app.mode-speaking { --accent: 105, 184, 255; }
 
 .ambient {
   position: absolute;
   z-index: -2;
-  width: min(78vmin, 900px);
+  width: min(64vmin, 760px);
   aspect-ratio: 1;
   border-radius: 50%;
   pointer-events: none;
-  filter: blur(112px);
-  opacity: 0.105;
-  transition: background 1.4s ease, opacity 1.4s ease;
+  filter: blur(125px);
+  opacity: 0.095;
+  transition: background 1.2s ease, opacity 1.2s ease;
 }
 
 .ambient-one {
-  background: #176b83;
-  transform: translate(-12%, -7%);
+  background: #176f85;
+  transform: translate(-22%, -12%);
 }
 
 .ambient-two {
-  width: min(60vmin, 700px);
-  background: #303078;
-  opacity: 0.07;
-  transform: translate(19%, 16%);
+  width: min(48vmin, 580px);
+  background: #3b3a87;
+  opacity: 0.065;
+  transform: translate(25%, 20%);
 }
 
-.mode-listening .ambient-one { background: #168f9d; opacity: 0.14; }
-.mode-thinking .ambient-one { background: #5143a8; opacity: 0.16; }
-.mode-speaking .ambient-one { background: #286cac; opacity: 0.14; }
+.mode-listening .ambient-one { background: #168e92; opacity: 0.14; }
+.mode-thinking .ambient-one { background: #5345a6; opacity: 0.15; }
+.mode-speaking .ambient-one { background: #286ca9; opacity: 0.13; }
 
 .orb-halo {
   position: absolute;
   z-index: -1;
-  width: min(62vmin, 760px);
+  width: min(58vmin, 700px);
   aspect-ratio: 1;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(var(--accent), 0.12) 0%,
-    rgba(var(--accent), 0.045) 39%,
+    rgba(var(--accent), 0.105) 0%,
+    rgba(var(--accent), 0.035) 40%,
     transparent 72%
   );
-  filter: blur(48px);
-  animation: halo-breathe 9s ease-in-out infinite;
+  filter: blur(54px);
+  transform: translateY(1%);
+  animation: reactor-breathe 8s ease-in-out infinite;
   transition: background 1.1s ease;
 }
 
 .orb-stage {
   position: relative;
-  width: min(96vmin, 1160px);
-  height: min(96vmin, 1160px);
+  width: min(90vmin, 1080px);
+  height: min(90vmin, 1080px);
   max-width: 98vw;
   max-height: 98vh;
   max-height: 98dvh;
@@ -132,15 +117,15 @@ body {
   height: 100%;
 }
 
-@keyframes halo-breathe {
-  0%, 100% { opacity: 0.68; transform: scale(0.94); }
-  50% { opacity: 1; transform: scale(1.06); }
+@keyframes reactor-breathe {
+  0%, 100% { opacity: 0.65; transform: translateY(1%) scale(0.94); }
+  50% { opacity: 1; transform: translateY(1%) scale(1.07); }
 }
 
 @media (max-width: 640px) {
   .orb-stage {
-    width: 112vw;
-    height: 112vw;
+    width: 108vw;
+    height: 108vw;
     max-width: none;
     max-height: none;
   }
