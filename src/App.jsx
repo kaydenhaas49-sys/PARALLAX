@@ -399,7 +399,8 @@ function makeOrbScene(host, modeRef) {
       orbMaterial.uniforms.uEnergy.value,
       activeMode.energy,
       0.035
-    );    coreMaterial.uniforms.uEnergy.value = THREE.MathUtils.lerp(
+    );
+    coreMaterial.uniforms.uEnergy.value = THREE.MathUtils.lerp(
       coreMaterial.uniforms.uEnergy.value,
       activeMode.energy,
       0.04
