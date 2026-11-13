@@ -71,7 +71,7 @@ const coreFragmentShader = `
     color += uColorB * (fresnel * 0.68 + contour * 0.82 + sweep * 0.32);
     color += uColorC * (contour * 0.58 + sweep * 0.22);
     color *= 0.82 + uEnergy * 0.25;
-    gl_FragColor = vec4(color, 0.96);
+    gl_FragColor = vec4(color, 0.34 + fresnel * 0.26 + contour * 0.18 + sweep * 0.1);
   }
 `;
 
@@ -228,7 +228,7 @@ function makeOrbScene(host, modeRef) {
   root.add(struts.group);
 
   // The dark lens carries moving contours; the bright heart sits behind it.
-  const coreMaterial = makeMaterial(coreFragmentShader, MODES.standby.palette, false);
+  const coreMaterial = makeMaterial(coreFragmentShader, MODES.standby.palette, true);
   const core = new THREE.Mesh(new THREE.SphereGeometry(0.64, 128, 128), coreMaterial);
   root.add(core);
 
