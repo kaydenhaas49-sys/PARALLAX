@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
       host: "127.0.0.1",
       port: 4174,
       strictPort: true,
-      proxy: { "/api/glm": glmProxy },
+      proxy: { "/api/glm": glmProxy, "/api/tts": ttsProxy },
     },
   };
 });
