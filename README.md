@@ -191,7 +191,9 @@ To use Ollama, add these settings to your local .env file:
 
 Then start the usual stack with npm run dev:full. You can also launch directly with npm run dev:ollama, or explicitly return to llama.cpp with npm run dev:llamacpp.
 
-The launcher checks Ollama's local /api/tags endpoint before starting OpenJarvis. It does not download or pull models automatically. When PARALLAX_OLLAMA_MODEL is blank, OpenJarvis discovers an installed model. Set it to an exact tag from ollama list to pin one. Choose an Ollama model with native tool/function-calling support for desktop actions; models without tool support can still chat but may not be able to use PARALLAX's desktop tools.
+The launcher checks Ollama's local /api/tags endpoint before starting OpenJarvis. It does not download or pull models automatically. When PARALLAX_OLLAMA_MODEL is set, that tag becomes the initial selection in PARALLAX; leave it blank to use the backend's default discovery.
+
+The PARALLAX chat composer includes a **Model** selector populated from OpenJarvis `/v1/models`. Choose any model advertised by the active backend; the selection is sent with each chat request and saved in this browser for the next visit. With Ollama selected, this lets you switch among installed Ollama models without restarting PARALLAX or editing `.env`. Choose a model with native tool/function-calling support when you want desktop actions; models without tool support can still chat but may not be able to use PARALLAX's desktop tools.
 
 PARALLAX_OLLAMA_BASE_URL defaults to http://127.0.0.1:11434. An explicit engine.ollama.host in ~/.openjarvis/config.toml takes precedence over this environment setting. The llama.cpp host remains configured independently at engine.llamacpp.host.
 
