@@ -185,6 +185,15 @@ echo "Starting the OpenJarvis systems console on 127.0.0.1:5175..."
 ) &
 GUI_PID=$!
 
+# Keep the chat UI's explicit model in sync with the model selected for OpenJarvis.
+# The UI sends its model field on each request, so it must not choose Ollama's first tag.
+if [[ "$ENGINE" == "ollama" && -n "${PARALLAX_OLLAMA_MODEL:-}" ]]; then
+  export VITE_PARALLAX_MODEL="$PARALLAX_OLLAMA_MODEL"
+  echo "PARALLAX chat model override: $VITE_PARALLAX_MODEL"
+else
+  unset VITE_PARALLAX_MODEL
+fi
+
 echo "Starting PARALLAX on http://127.0.0.1:4174"
 cd "$ROOT"
 npm run dev
