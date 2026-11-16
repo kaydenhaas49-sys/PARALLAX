@@ -364,6 +364,52 @@ body {
 }
 
 
+/* Runtime local inference model selector */
+.model-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(119, 211, 227, 0.13);
+  border-radius: 9px;
+  background: rgba(7, 19, 28, 0.48);
+}
+.model-picker label {
+  color: rgba(145, 184, 196, 0.58);
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+}
+.composer select.model-select {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 28px 6px 9px;
+  border: 1px solid rgba(119, 211, 227, 0.16);
+  border-radius: 7px;
+  outline: none;
+  background: rgba(3, 12, 19, 0.82);
+  color: #c9edf3;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+.composer select.model-select:focus { border-color: rgba(119, 211, 227, 0.46); }
+.composer select.model-select:disabled { opacity: 0.55; cursor: wait; }
+.composer select.model-select option { background: #08121a; color: #e5f8fb; }
+.model-picker-count {
+  color: rgba(132, 190, 203, 0.46);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .model-picker { grid-template-columns: auto minmax(0, 1fr); gap: 7px; }
+  .model-picker-count { grid-column: 2; }
+}
+
 /* Always-on local voice status and selectable local voices */
 .composer-meta { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 14px; }
 .connection-meta { display:inline-flex; align-items:center; gap:7px; min-width:0; }
