@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Cpu, Mic, Volume2, VolumeX, X } from "lucide-react";
+import { Cpu, Mic, MonitorCog, Volume2, VolumeX, X } from "lucide-react";
+import DesktopPanel from "./DesktopPanel.jsx";
+import { advancePet, createPetState } from "./petBrain.js";
 import { synthesizeSpeech, VOICE_OPTIONS } from "./voice.js";
 import { useAlwaysListening } from "./useAlwaysListening.js";
 
 const MODES = {
   standby: { speed: 0.28, energy: 0.34, colors: ["#173d55", "#42d6e7", "#e7fbff"] },
+  curious: { speed: 0.42, energy: 0.48, colors: ["#17475b", "#69e1ec", "#f0fdff"] },
   listening: { speed: 0.58, energy: 0.68, colors: ["#145468", "#4ff0eb", "#f3ffff"] },
   thinking: { speed: 0.82, energy: 0.92, colors: ["#352c76", "#9a87ff", "#f1ebff"] },
   speaking: { speed: 0.68, energy: 0.8, colors: ["#1d4778", "#69baff", "#eff8ff"] },
@@ -526,6 +529,8 @@ function makeOrbScene(host, modeRef) {
 export default function App() {
   const [mode, setMode] = useState("standby");
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [desktopOpen, setDesktopOpen] = useState(false);
+  const [petState, setPetState] = useState(createPetState);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -549,8 +554,15 @@ export default function App() {
   const { status: micStatus, error: micError, setPaused: pauseListening } = useAlwaysListening(handleVoiceCommand);
 
   useEffect(() => {
-    modeRef.current = mode;
-  }, [mode]);
+    modeRef.current = mode === "standby" ? petState.visualMode : mode;
+  }, [mode, petState.visualMode]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setPetState((current) => advancePet(current, { type: "tick", now: Date.now() }));
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -648,6 +660,8 @@ export default function App() {
   const sendAssistantMessage = async (messageText) => {
     const text = String(messageText || "").trim();
     if (!text || sendingRef.current) return;
+    setPetState((current) => advancePet(current, { type: "user-message" }));
+    setPetState((current) => advancePet(current, { type: "thinking" }));
     sendingRef.current = true;
     pauseListening(true);
     stopSpeech();
@@ -668,7 +682,7 @@ export default function App() {
           messages: [
             {
               role: "system",
-              content: "You are PARALLAX, a capable, thoughtful local AI assistant and the user's sharp-witted onboard teammate. Be clear, useful, natural, and conversational. Sound relaxed, direct, quick-thinking, and confident; use dry humour, cheeky bluntness, and occasional mild-to-moderate swearing only when it fits naturally. Do not sound like a corporate helpdesk or formal presenter. Keep ordinary answers concise. When the user signals urgency, prioritize essential information and respond in short, direct sentences without panic or unnecessary explanation. Explain technical work step by step when asked, and never claim to have performed actions on the user's computer unless a connected tool actually did so."
+              content: "You are PARALLAX, a capable, thoughtful local AI assistant and the user's sharp-witted onboard teammate. Be clear, useful, natural, and conversational. Sound relaxed, direct, quick-thinking, and confident; use dry humour, cheeky bluntness, and occasional mild-to-moderate swearing only when it fits naturally. Do not sound like a corporate helpdesk or formal presenter. Keep ordinary answers concise. When the user signals urgency, prioritize essential information and respond in short, direct sentences without panic or unnecessary explanation. Explain technical work step by step when asked, and never claim to have performed actions on the user's computer unless a connected tool actually did so. You may use connected PARALLAX desktop tools for directly requested actions: launch an installed application or Steam game, list or focus Hyprland windows, read basic system status, adjust audio volume, open an explicitly requested HTTP or HTTPS URL, or search file and folder names in normal user folders. Verify each action from its tool result. Never use shell commands, write or delete files, install software, run arbitrary code, or perform administrator actions."
             },
             ...conversation.slice(-14).map(({ role, content }) => ({ role, content }))
           ],
@@ -690,6 +704,7 @@ export default function App() {
         throw new Error("OpenJarvis returned an empty response.");
       }
 
+      setPetState((current) => advancePet(current, { type: "assistant-response" }));
       setMessages((current) => [...current, { id: Date.now() + 1, role: "assistant", content: answer.trim() }]);
       if (voiceEnabledRef.current) {
         void speakAssistant(answer.trim());
@@ -702,6 +717,7 @@ export default function App() {
         }, 4200);
       }
     } catch (error) {
+      setPetState((current) => advancePet(current, { type: "action-error" }));
       const message = error instanceof Error ? error.message : "Unknown connection error.";
       setMessages((current) => [...current, {
         id: Date.now() + 1,
@@ -754,6 +770,15 @@ export default function App() {
       <div className="ambient ambient-two" />
       <div className="orb-halo" />
       <div className="orb-stage" ref={orbStage} />
+      <div className={"pet-status pet-" + petState.mood} aria-live="polite">
+        <span className="pet-status-dot" />
+        <span className="pet-status-name">PARALLAX COMPANION</span>
+        <strong>{petState.mood.toUpperCase()}</strong>
+        <small>{petState.activityLabel}</small>
+      </div>
+      <button type="button" className="workspace-toggle desktop-tools-toggle" onClick={() => setDesktopOpen(true)} aria-label="Open desktop controls" title="Local desktop controls">
+        <MonitorCog size={15} /><span>DESKTOP</span>
+      </button>
 
       <button
         type="button"
@@ -765,6 +790,8 @@ export default function App() {
         <Cpu size={15} />
         <span>SYSTEMS</span>
       </button>
+
+      {desktopOpen && <DesktopPanel onClose={() => setDesktopOpen(false)} />}
 
       {workspaceOpen && (
         <div className="workspace-overlay" role="dialog" aria-modal="true" aria-label="PARALLAX systems console">

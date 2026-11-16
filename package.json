@@ -11,7 +11,8 @@
     "voice:kokoro": "./.venv-tts/bin/python tts_server.py",
     "voice-design:audition": "./.venv-voice-design/bin/python voice_design.py",
     "setup:openjarvis": "bash scripts/setup-openjarvis.sh",
-    "dev:full": "bash scripts/dev-full.sh"
+    "dev:full": "bash scripts/dev-full.sh",
+    "desktop:bridge": "python3 scripts/desktop_mcp.py --http"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

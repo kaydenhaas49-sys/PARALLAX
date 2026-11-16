@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
     target: jarvisTarget, changeOrigin: true, ws: true,
     rewrite: (path) => path.replace(/^\/api\/jarvis/, ""),
   };
+  const desktopTarget = (env.PARALLAX_DESKTOP_BASE_URL || "http://127.0.0.1:8130").replace(/\/$/, "");
+  const desktopProxy = { target: desktopTarget, changeOrigin: false, rewrite: (path) => path.replace(/^\/api\/desktop/, "") };
   const ttsTarget = (env.PARALLAX_TTS_BASE_URL || "http://127.0.0.1:7861").replace(/\/$/, "");
   const ttsProxy = {
     target: ttsTarget,
@@ -27,7 +29,7 @@ export default defineConfig(({ mode }) => {
       host: "127.0.0.1",
       port: 4174,
       strictPort: true,
-      proxy: { "/api/glm": glmProxy, "/api/tts": ttsProxy, "/api/jarvis": jarvisProxy },
+      proxy: { "/api/glm": glmProxy, "/api/tts": ttsProxy, "/api/jarvis": jarvisProxy, "/api/desktop": desktopProxy },
     },
     preview: {
       host: "127.0.0.1",

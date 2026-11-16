@@ -31,6 +31,14 @@ enabled = [
   "memory_search",
   "memory_store",
   "browser",
+  "parallax_list_applications",
+  "parallax_launch_application",
+  "parallax_list_windows",
+  "parallax_focus_window",
+  "parallax_get_system_status",
+  "parallax_adjust_volume",
+  "parallax_open_url",
+  "parallax_search_files",
 ]
 
 [tools.storage]

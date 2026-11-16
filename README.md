@@ -164,3 +164,14 @@ The [Qwen3-TTS repository](https://github.com/QwenLM/Qwen3-TTS) documents the vo
 - [Stanford research paper](https://arxiv.org/abs/2605.17172)
 
 See [OPENJARVIS.md](OPENJARVIS.md) for the integration boundary, pinned revision and update procedure.
+
+
+## Desktop companion tools
+
+The full launcher starts a local PARALLAX desktop bridge on loopback port 8130. Open DESKTOP in the orb UI to browse installed applications and Steam games, inspect basic system status, focus open Hyprland windows, and adjust PipeWire output volume.
+
+OpenJarvis discovers the same capabilities through a local parallax-desktop MCP server. The assistant can launch an already-installed desktop application or detected Steam game by name, list/focus Hyprland windows, read basic local system status, adjust audio, open a user-requested HTTP/HTTPS URL, and search file/folder names in normal user folders. Steam discovery uses installed appmanifest_*.acf files; PARALLAX does not install missing games.
+
+The desktop bridge binds only to 127.0.0.1. Its HTTP interface accepts state-changing requests only from the local PARALLAX web origin. The MCP server exposes named operations only: no terminal, arbitrary shell, general-purpose command runner, file writing/deletion, package installation, or administrator access. File search matches names only and does not read file contents.
+
+npm run setup:openjarvis and npm run dev:full merge the desktop MCP server and tool names into ~/.openjarvis/config.toml. A one-time owner-readable backup is created before the config is changed. If OpenJarvis was already running before the desktop tools were added, restart its API so it reloads the MCP server configuration.

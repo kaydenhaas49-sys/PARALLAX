@@ -6,12 +6,17 @@ VENDOR="$ROOT/vendor/OpenJarvis"
 OPENJARVIS_HOME="${PARALLAX_OPENJARVIS_HOME:-$HOME/.openjarvis}"
 API_PID=""
 GUI_PID=""
+DESKTOP_PID=""
 
 cleanup() {
   set +e
   if [[ -n "$GUI_PID" ]] && kill -0 "$GUI_PID" 2>/dev/null; then
     kill "$GUI_PID" 2>/dev/null
     wait "$GUI_PID" 2>/dev/null
+  fi
+  if [[ -n "$DESKTOP_PID" ]] && kill -0 "$DESKTOP_PID" 2>/dev/null; then
+    kill "$DESKTOP_PID" 2>/dev/null
+    wait "$DESKTOP_PID" 2>/dev/null
   fi
   if [[ -n "$API_PID" ]] && kill -0 "$API_PID" 2>/dev/null; then
     kill "$API_PID" 2>/dev/null
@@ -46,6 +51,23 @@ tts_backend = "kokoro"
 voice_id = "bm_george"
 voice_speed = 1.0
 TOML
+fi
+
+python3 "$ROOT/scripts/merge_openjarvis_config.py" "$OPENJARVIS_HOME/config.toml" "$ROOT/scripts/desktop_mcp.py"
+
+if curl -fsS "http://127.0.0.1:8130/health" >/dev/null 2>&1; then
+  echo "Reusing the PARALLAX desktop bridge on 127.0.0.1:8130."
+else
+  echo "Starting the allow-listed PARALLAX desktop bridge on 127.0.0.1:8130..."
+  python3 "$ROOT/scripts/desktop_mcp.py" --http --host 127.0.0.1 --port 8130 &
+  DESKTOP_PID=$!
+  READY=0
+  for _ in $(seq 1 20); do
+    if curl -fsS "http://127.0.0.1:8130/health" >/dev/null 2>&1; then READY=1; break; fi
+    if ! kill -0 "$DESKTOP_PID" 2>/dev/null; then echo "Desktop bridge exited before becoming healthy." >&2; exit 1; fi
+    sleep 1
+  done
+  if [[ "$READY" != "1" ]]; then echo "Desktop bridge did not become healthy on port 8130." >&2; exit 1; fi
 fi
 
 if curl -fsS "http://127.0.0.1:8123/health" >/dev/null 2>&1; then

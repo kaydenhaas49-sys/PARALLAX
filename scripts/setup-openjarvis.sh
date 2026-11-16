@@ -74,6 +74,8 @@ voice_speed = 1.0
 TOML
 fi
 
+python3 "$ROOT/scripts/merge_openjarvis_config.py" "$OPENJARVIS_HOME/config.toml" "$ROOT/scripts/desktop_mcp.py"
+
 echo
-echo "OpenJarvis speech installed: Faster-Whisper STT + Kokoro TTS."
+echo "OpenJarvis speech installed: Faster-Whisper STT + Kokoro TTS + PARALLAX desktop tools."
 echo "Start the complete PARALLAX stack with: npm run dev:full"
