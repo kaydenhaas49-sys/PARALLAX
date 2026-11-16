@@ -41,6 +41,17 @@ context_max_tokens = 2048
 [tools.mcp]
 enabled = true
 
+# Fully local voice input and output.
+[speech]
+backend = "faster-whisper"
+model = "base"
+language = "en"
+device = "cpu"
+compute_type = "int8"
+tts_backend = "kokoro"
+voice_id = "bm_george"
+voice_speed = 1.0
+
 [server]
 host = "127.0.0.1"
 port = 8123
