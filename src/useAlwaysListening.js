@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const WAKE_WORD = /^(?:hey\\s+)?parallax\\b[\\s,.:;!?-]*/i;
+const WAKE_WORD = /^(?:hey\s+)?parallax\b[\s,.:;!?-]*/i;
 const SILENCE_MS = 850;
 const MAX_UTTERANCE_MS = 15000;
 const WAKE_WINDOW_MS = 9000;
@@ -47,6 +47,7 @@ export function useAlwaysListening(onCommand) {
       if (next !== lastUiStatus) {
         lastUiStatus = next;
         setStatus(next);
+        if (next !== "error") setError("");
       }
       if (detail) setError(detail);
     };
@@ -203,6 +204,8 @@ export function useAlwaysListening(onCommand) {
         updateStatus("listening");
         frameId = window.requestAnimationFrame(monitorAudio);
       } catch (err) {
+        stream?.getTracks().forEach((track) => track.stop());
+        stream = null;
         const message = err instanceof Error ? err.message : "Microphone permission was not granted.";
         updateStatus("error", message);
       }
