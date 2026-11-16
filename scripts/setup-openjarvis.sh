@@ -57,6 +57,23 @@ else
   echo "Review [speech] in that file; PARALLAX's local voice settings are documented in README.md."
 fi
 
+# Add PARALLAX's local speech defaults only when no speech section exists.
+# Existing user-selected speech settings are left untouched.
+if ! grep -q '^\\[speech\\]' "$OPENJARVIS_HOME/config.toml"; then
+  cat >> "$OPENJARVIS_HOME/config.toml" <<'TOML'
+
+[speech]
+backend = "faster-whisper"
+model = "base"
+language = "en"
+device = "cpu"
+compute_type = "int8"
+tts_backend = "kokoro"
+voice_id = "bm_george"
+voice_speed = 1.0
+TOML
+fi
+
 echo
 echo "OpenJarvis speech installed: Faster-Whisper STT + Kokoro TTS."
 echo "Start the complete PARALLAX stack with: npm run dev:full"
