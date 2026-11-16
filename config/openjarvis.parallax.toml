@@ -1,0 +1,58 @@
+# PARALLAX profile for the OpenJarvis backend.
+# Uses the existing local llama.cpp OpenAI-compatible API.
+
+[engine]
+default = "llamacpp"
+
+[engine.llamacpp]
+host = "http://127.0.0.1:8080"
+
+[intelligence]
+# Empty means discover the model exposed by llama-server.
+default_model = ""
+temperature = 0.7
+max_tokens = 1200
+
+[agent]
+default_agent = "orchestrator"
+max_turns = 8
+context_from_memory = true
+
+[tools]
+# Shell, arbitrary code execution and file writing are intentionally not enabled.
+enabled = [
+  "think",
+  "calculator",
+  "web_search",
+  "file_read",
+  "knowledge_search",
+  "knowledge_sql",
+  "scan_chunks",
+  "memory_search",
+  "memory_store",
+  "browser",
+]
+
+[tools.storage]
+default_backend = "sqlite"
+context_top_k = 5
+context_max_tokens = 2048
+
+[tools.mcp]
+enabled = true
+
+[server]
+host = "127.0.0.1"
+port = 8123
+agent = "orchestrator"
+workers = 1
+
+[learning]
+enabled = true
+auto_update = false
+
+[telemetry]
+enabled = true
+
+[analytics]
+enabled = false

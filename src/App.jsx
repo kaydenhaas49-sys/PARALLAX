@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Volume2, VolumeX } from "lucide-react";
+import { Cpu, Volume2, VolumeX, X } from "lucide-react";
 import { synthesizeSpeech } from "./voice.js";
 
 const MODES = {
@@ -524,6 +524,7 @@ function makeOrbScene(host, modeRef) {
 
 export default function App() {
   const [mode, setMode] = useState("standby");
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -545,16 +546,16 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
-    const connectToGLM = async () => {
+    const connectToOpenJarvis = async () => {
       try {
-        const response = await fetch("/api/glm/models");
-        if (!response.ok) throw new Error("GLM model endpoint returned " + response.status);
+        const response = await fetch("/api/jarvis/v1/models");
+        if (!response.ok) throw new Error("OpenJarvis model endpoint returned " + response.status);
         const payload = await response.json();
         const availableModel =
           payload.data?.[0]?.id ||
           payload.models?.[0]?.name ||
           payload.models?.[0]?.model ||
-          "glm";
+          "local-model";
         if (!active) return;
         setModel(availableModel);
         setConnection({ status: "online", model: availableModel });
@@ -563,7 +564,7 @@ export default function App() {
         setConnection({ status: "offline", model: "" });
       }
     };
-    connectToGLM();
+    connectToOpenJarvis();
     return () => { active = false; };
   }, []);
 
@@ -644,7 +645,7 @@ export default function App() {
     setMode("thinking");
 
     try {
-      const response = await fetch("/api/glm/chat/completions", {
+      const response = await fetch("/api/jarvis/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -689,7 +690,7 @@ export default function App() {
       setMessages((current) => [...current, {
         id: Date.now() + 1,
         role: "assistant",
-        content: "I couldn't complete that request. " + message + " Check that your GLM server is running at 127.0.0.1:8080."
+        content: "I couldn't complete that request. " + message + " Check that OpenJarvis is running. Start the full stack with npm run dev:full."
       }]);
       setMode("standby");
     } finally {
@@ -713,6 +714,7 @@ export default function App() {
         Escape: "standby",
       };
       if (shortcuts[event.key]) setMode(shortcuts[event.key]);
+      if (event.key === "Escape") setWorkspaceOpen(false);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -724,6 +726,45 @@ export default function App() {
       <div className="ambient ambient-two" />
       <div className="orb-halo" />
       <div className="orb-stage" ref={orbStage} />
+
+      <button
+        type="button"
+        className="workspace-toggle"
+        onClick={() => setWorkspaceOpen(true)}
+        aria-label="Open PARALLAX systems console"
+        title="OpenJarvis systems console"
+      >
+        <Cpu size={15} />
+        <span>SYSTEMS</span>
+      </button>
+
+      {workspaceOpen && (
+        <div className="workspace-overlay" role="dialog" aria-modal="true" aria-label="PARALLAX systems console">
+          <section className="workspace-window">
+            <header className="workspace-heading">
+              <div className="workspace-heading-copy">
+                <span className="workspace-kicker">OPENJARVIS / LOCAL AGENT PLATFORM</span>
+                <strong>PARALLAX SYSTEMS</strong>
+              </div>
+              <button
+                type="button"
+                className="workspace-close"
+                onClick={() => setWorkspaceOpen(false)}
+                aria-label="Close systems console"
+                title="Return to PARALLAX"
+              >
+                <X size={18} />
+              </button>
+            </header>
+            <iframe
+              src="http://127.0.0.1:5175/"
+              title="OpenJarvis control center"
+              allow="microphone; clipboard-read; clipboard-write"
+              referrerPolicy="no-referrer"
+            />
+          </section>
+        </div>
+      )}
 
       <section className="assistant-console" aria-label="Talk to PARALLAX">
         {messages.length > 0 && (
@@ -742,10 +783,10 @@ export default function App() {
             <span className={"connection-dot " + connection.status} />
             <span>
               {connection.status === "online"
-                ? "GLM CONNECTED · " + model
+                ? "PARALLAX CORE READY · " + model
                 : connection.status === "connecting"
-                  ? "CONNECTING TO GLM"
-                  : "GLM OFFLINE · CHECK LOCAL SERVER"}
+                  ? "CONNECTING TO OPENJARVIS"
+                  : "OPENJARVIS OFFLINE · START THE FULL STACK"}
             </span>
           </div>
           <div className="composer-input-row">

@@ -312,3 +312,53 @@ body {
   background: rgba(57, 181, 201, 0.22);
 }
 
+
+
+/* OpenJarvis workspace integration */
+.workspace-toggle {
+  position: absolute; top: 24px; right: 28px; z-index: 8;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 10px 14px; border: 1px solid rgba(119,211,227,.22);
+  border-radius: 999px; background: rgba(4,13,21,.62);
+  color: rgba(190,235,244,.82); font: inherit; font-size: 9px;
+  font-weight: 700; letter-spacing: .16em; cursor: pointer;
+  backdrop-filter: blur(18px); box-shadow: 0 8px 34px rgba(0,0,0,.2);
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.workspace-toggle:hover {
+  border-color: rgba(119,211,227,.48); background: rgba(28,89,106,.3);
+  color: #d8faff; transform: translateY(-1px);
+}
+.workspace-overlay {
+  position: fixed; inset: 0; z-index: 30; display: grid; place-items: center;
+  padding: clamp(8px,2vw,26px); background: rgba(1,4,9,.84); backdrop-filter: blur(16px);
+}
+.workspace-window {
+  display: flex; flex-direction: column; width: min(1680px,100%);
+  height: min(960px,100%); min-height: 0; overflow: hidden;
+  border: 1px solid rgba(119,211,227,.2); border-radius: 18px;
+  background: #090e15; box-shadow: 0 28px 110px rgba(0,0,0,.62), 0 0 70px rgba(42,153,180,.08);
+}
+.workspace-heading {
+  display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between;
+  gap: 14px; min-height: 58px; padding: 10px 15px 10px 19px;
+  border-bottom: 1px solid rgba(119,211,227,.12); background: rgba(5,12,19,.96);
+}
+.workspace-heading-copy { display: grid; gap: 3px; }
+.workspace-kicker { color: rgba(132,190,203,.6); font-size: 8px; font-weight: 700; letter-spacing: .18em; }
+.workspace-heading strong { color: #e1f8fc; font-size: 11px; font-weight: 700; letter-spacing: .13em; }
+.workspace-close {
+  display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center;
+  border: 1px solid rgba(119,211,227,.18); border-radius: 10px;
+  background: rgba(57,151,171,.1); color: #b8eaf3; cursor: pointer;
+}
+.workspace-close:hover { border-color: rgba(119,211,227,.42); background: rgba(57,151,171,.22); }
+.workspace-window iframe {
+  display: block; width: 100%; height: 100%; min-height: 0; flex: 1 1 auto;
+  border: 0; background: #101114;
+}
+@media (max-width: 640px) {
+  .workspace-toggle { top: 14px; right: 14px; padding: 9px 11px; }
+  .workspace-overlay { padding: 0; }
+  .workspace-window { width: 100%; height: 100%; border-radius: 0; border: 0; }
+}

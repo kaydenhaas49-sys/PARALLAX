@@ -9,7 +9,9 @@
     "preview": "vite preview --host 127.0.0.1 --port 4174 --strictPort",
     "voice": "./.venv-voice-design/bin/python qwen_tts_server.py",
     "voice:kokoro": "./.venv-tts/bin/python tts_server.py",
-    "voice-design:audition": "./.venv-voice-design/bin/python voice_design.py"
+    "voice-design:audition": "./.venv-voice-design/bin/python voice_design.py",
+    "setup:openjarvis": "bash scripts/setup-openjarvis.sh",
+    "dev:full": "bash scripts/dev-full.sh"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
