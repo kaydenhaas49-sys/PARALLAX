@@ -33,13 +33,19 @@ uv python install 3.12
     --extra memory-pdf \
     --extra gpu-metrics \
     --extra learning-dspy \
-    --extra learning-gepa
+    --extra learning-gepa \
+    --extra speech \
+    --extra voice
   uv run --no-sync playwright install chromium
 )
 (
   cd "$VENDOR/frontend"
   npm install --no-audit --no-fund
 )
+
+if ! command -v espeak-ng >/dev/null 2>&1; then
+  echo "NOTE: Kokoro English voices need espeak-ng. On Arch/Omarchy: sudo pacman -S espeak-ng"
+fi
 
 OPENJARVIS_HOME="${PARALLAX_OPENJARVIS_HOME:-$HOME/.openjarvis}"
 mkdir -p "$OPENJARVIS_HOME"
@@ -48,8 +54,9 @@ if [[ ! -f "$OPENJARVIS_HOME/config.toml" ]]; then
   echo "Created starter config at $OPENJARVIS_HOME/config.toml"
 else
   echo "Keeping existing OpenJarvis config at $OPENJARVIS_HOME/config.toml"
+  echo "Review [speech] in that file; PARALLAX's local voice settings are documented in README.md."
 fi
 
 echo
-echo "OpenJarvis is installed in vendor/OpenJarvis."
+echo "OpenJarvis speech installed: Faster-Whisper STT + Kokoro TTS."
 echo "Start the complete PARALLAX stack with: npm run dev:full"
