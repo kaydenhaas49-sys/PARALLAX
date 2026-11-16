@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Cpu, Volume2, VolumeX, X } from "lucide-react";
-import { synthesizeSpeech } from "./voice.js";
+import { Cpu, Mic, Volume2, VolumeX, X } from "lucide-react";
+import { synthesizeSpeech, VOICE_OPTIONS } from "./voice.js";
+import { useAlwaysListening } from "./useAlwaysListening.js";
 
 const MODES = {
   standby: { speed: 0.28, energy: 0.34, colors: ["#173d55", "#42d6e7", "#e7fbff"] },
@@ -530,6 +531,7 @@ export default function App() {
   const [isSending, setIsSending] = useState(false);
   const [connection, setConnection] = useState({ status: "connecting", model: "" });
   const [model, setModel] = useState("local-model");
+  const [selectedVoice, setSelectedVoice] = useState("parallax-v6");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [voiceStatus, setVoiceStatus] = useState("unknown");
   const orbStage = useRef(null);
@@ -538,7 +540,13 @@ export default function App() {
   const audioUrlRef = useRef(null);
   const speechRequestRef = useRef(0);
   const voiceEnabledRef = useRef(true);
+  const sendingRef = useRef(false);
+  const sendAssistantMessageRef = useRef(null);
   const modeRef = useRef(mode);
+  const handleVoiceCommand = (command) => {
+    void sendAssistantMessageRef.current?.(command);
+  };
+  const { status: micStatus, error: micError, setPaused: pauseListening } = useAlwaysListening(handleVoiceCommand);
 
   useEffect(() => {
     modeRef.current = mode;
@@ -597,11 +605,14 @@ export default function App() {
   };
 
   const speakAssistant = async (answer) => {
-    if (!voiceEnabledRef.current) return;
+    if (!voiceEnabledRef.current) {
+      pauseListening(false);
+      return;
+    }
     const requestId = ++speechRequestRef.current;
     setVoiceStatus("loading");
     try {
-      const audioUrl = await synthesizeSpeech(answer);
+      const audioUrl = await synthesizeSpeech(answer, { voiceId: selectedVoice });
       if (!voiceEnabledRef.current || requestId !== speechRequestRef.current) {
         URL.revokeObjectURL(audioUrl);
         return;
@@ -614,11 +625,13 @@ export default function App() {
       audio.onended = () => {
         clearSpeech();
         setMode((current) => current === "speaking" ? "standby" : current);
+        window.setTimeout(() => pauseListening(false), 650);
       };
       audio.onerror = () => {
         clearSpeech();
         setVoiceStatus("offline");
         setMode((current) => current === "speaking" ? "standby" : current);
+        pauseListening(false);
       };
 
       await audio.play();
@@ -628,13 +641,15 @@ export default function App() {
       clearSpeech();
       setVoiceStatus("offline");
       setMode((current) => current === "thinking" ? "standby" : current);
+      pauseListening(false);
     }
   };
 
-  const sendMessage = async (event) => {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text || isSending) return;
+  const sendAssistantMessage = async (messageText) => {
+    const text = String(messageText || "").trim();
+    if (!text || sendingRef.current) return;
+    sendingRef.current = true;
+    pauseListening(true);
     stopSpeech();
 
     const userMessage = { id: Date.now(), role: "user", content: text };
@@ -679,6 +694,7 @@ export default function App() {
       if (voiceEnabledRef.current) {
         void speakAssistant(answer.trim());
       } else {
+        pauseListening(false);
         setMode("speaking");
         if (speakingTimer.current) window.clearTimeout(speakingTimer.current);
         speakingTimer.current = window.setTimeout(() => {
@@ -693,9 +709,21 @@ export default function App() {
         content: "I couldn't complete that request. " + message + " Check that OpenJarvis is running. Start the full stack with npm run dev:full."
       }]);
       setMode("standby");
+      pauseListening(false);
     } finally {
+      sendingRef.current = false;
       setIsSending(false);
     }
+  };
+
+  sendAssistantMessageRef.current = sendAssistantMessage;
+
+  const sendMessage = (event) => {
+    event.preventDefault();
+    const text = draft.trim();
+    if (!text || sendingRef.current) return;
+    setDraft("");
+    void sendAssistantMessage(text);
   };
 
   useEffect(() => {
@@ -780,13 +808,28 @@ export default function App() {
         )}
         <form className="composer" onSubmit={sendMessage}>
           <div className="composer-meta">
-            <span className={"connection-dot " + connection.status} />
-            <span>
-              {connection.status === "online"
-                ? "PARALLAX CORE READY · " + model
-                : connection.status === "connecting"
-                  ? "CONNECTING TO OPENJARVIS"
-                  : "OPENJARVIS OFFLINE · START THE FULL STACK"}
+            <span className="connection-meta">
+              <span className={"connection-dot " + connection.status} />
+              <span>
+                {connection.status === "online"
+                  ? "PARALLAX CORE READY · " + model
+                  : connection.status === "connecting"
+                    ? "CONNECTING TO OPENJARVIS"
+                    : "OPENJARVIS OFFLINE · START THE FULL STACK"}
+              </span>
+            </span>
+            <span
+              className={"mic-indicator mic-" + micStatus}
+              title={micError || "Local microphone monitoring is active. Say Parallax to issue a command."}
+              aria-live="polite"
+            >
+              <Mic size={12} />
+              {micStatus === "listening" ? "MIC LIVE · SAY PARALLAX"
+                : micStatus === "armed" ? "WAKE WORD HEARD · SPEAK NOW"
+                : micStatus === "transcribing" ? "LOCAL WHISPER"
+                : micStatus === "paused" ? "MIC LIVE · RESPONSE IN PROGRESS"
+                : micStatus === "starting" ? "REQUESTING MICROPHONE"
+                : "MIC UNAVAILABLE"}
             </span>
           </div>
           <div className="composer-input-row">
@@ -801,6 +844,19 @@ export default function App() {
               aria-label="Message PARALLAX"
               autoComplete="off"
             />
+            <label className="voice-label" htmlFor="parallax-voice">VOICE</label>
+            <select
+              id="parallax-voice"
+              className="voice-select"
+              value={selectedVoice}
+              onChange={(event) => setSelectedVoice(event.target.value)}
+              aria-label="PARALLAX speaking voice"
+              title="Choose PARALLAX's speaking voice"
+            >
+              {VOICE_OPTIONS.map((voice) => (
+                <option key={voice.id} value={voice.id}>{voice.label}</option>
+              ))}
+            </select>
             <button
               type="button"
               className={"voice-toggle " + (voiceEnabled ? "enabled" : "muted")}
@@ -814,6 +870,7 @@ export default function App() {
                 setVoiceEnabled(next);
                 if (!next) {
                   stopSpeech();
+                  pauseListening(false);
                   setMode("standby");
                 }
               }}
