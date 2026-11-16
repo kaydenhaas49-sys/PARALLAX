@@ -4,6 +4,36 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENDOR="$ROOT/vendor/OpenJarvis"
 OPENJARVIS_HOME="${PARALLAX_OPENJARVIS_HOME:-$HOME/.openjarvis}"
+
+# Read only PARALLAX backend settings from .env without executing the file.
+# Variables already exported by the caller take precedence.
+load_env_setting() {
+  local name="$1" line key value
+  case "$name" in
+    PARALLAX_ENGINE) [[ -n "${PARALLAX_ENGINE:-}" ]] && return 0 ;;
+    PARALLAX_OLLAMA_BASE_URL) [[ -n "${PARALLAX_OLLAMA_BASE_URL:-}" ]] && return 0 ;;
+    PARALLAX_OLLAMA_MODEL) [[ -n "${PARALLAX_OLLAMA_MODEL:-}" ]] && return 0 ;;
+  esac
+  [[ -f "$ROOT/.env" ]] || return 0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "$line" == *=* ]] || continue
+    key="${line%%=*}"
+    key="${key//[[:space:]]/}"
+    [[ "$key" == "$name" ]] || continue
+    value="${line#*=}"
+    if [[ "$value" == \"* ]]; then value="${value#\"}"; fi
+    if [[ "$value" == *\" ]]; then value="${value%\"}"; fi
+    if [[ "$value" == \'* ]]; then value="${value#\'}"; fi
+    if [[ "$value" == *\' ]]; then value="${value%\'}"; fi
+    printf -v "$name" '%s' "$value"
+    export "$name"
+    return 0
+  done < "$ROOT/.env"
+}
+for setting in PARALLAX_ENGINE PARALLAX_OLLAMA_BASE_URL PARALLAX_OLLAMA_MODEL; do
+  load_env_setting "$setting"
+done
 API_PID=""
 GUI_PID=""
 DESKTOP_PID=""
@@ -55,6 +85,55 @@ fi
 
 python3 "$ROOT/scripts/merge_openjarvis_config.py" "$OPENJARVIS_HOME/config.toml" "$ROOT/scripts/desktop_mcp.py"
 
+
+ENGINE="${PARALLAX_ENGINE:-llamacpp}"
+ENGINE_ARGS=()
+case "$ENGINE" in
+  llamacpp)
+    ENGINE_ARGS=(--engine llamacpp)
+    echo "Selected inference backend: llama.cpp (127.0.0.1:8080)"
+    ;;
+  ollama)
+    # An explicit host in the user's OpenJarvis config takes precedence.
+    CONFIG_OLLAMA_HOST="$(python3 - "$OPENJARVIS_HOME/config.toml" <<'PY'
+import sys
+import tomllib
+with open(sys.argv[1], "rb") as handle:
+    config = tomllib.load(handle)
+print(config.get("engine", {}).get("ollama", {}).get("host", "") or "")
+PY
+)"
+    OLLAMA_HOST="${CONFIG_OLLAMA_HOST:-${PARALLAX_OLLAMA_BASE_URL:-${OLLAMA_HOST:-http://127.0.0.1:11434}}}"
+    OLLAMA_HOST="${OLLAMA_HOST%/}"
+    export OLLAMA_HOST
+    if ! curl -fsS "$OLLAMA_HOST/api/tags" >/dev/null 2>&1; then
+      echo "Ollama is not reachable at $OLLAMA_HOST." >&2
+      echo "Start Ollama and make sure at least one model is installed, then retry." >&2
+      echo "Check installed models with: ollama list" >&2
+      exit 1
+    fi
+    ENGINE_ARGS=(--engine ollama)
+    if [[ -n "${PARALLAX_OLLAMA_MODEL:-}" ]]; then
+      if ! curl -fsS "$OLLAMA_HOST/api/tags" | python3 -c 'import json,sys; wanted=sys.argv[1]; data=json.load(sys.stdin); names={entry.get("name") or entry.get("model") for entry in data.get("models", [])}; sys.exit(0 if wanted in names else 1)' "$PARALLAX_OLLAMA_MODEL"; then
+        echo "Ollama model '$PARALLAX_OLLAMA_MODEL' was not found at $OLLAMA_HOST." >&2
+        echo "Check the exact tag with: ollama list" >&2
+        exit 1
+      fi
+      ENGINE_ARGS+=(--model "$PARALLAX_OLLAMA_MODEL")
+    fi
+    echo "Selected inference backend: Ollama ($OLLAMA_HOST)"
+    if [[ -n "${PARALLAX_OLLAMA_MODEL:-}" ]]; then
+      echo "Selected Ollama model: $PARALLAX_OLLAMA_MODEL"
+    else
+      echo "Ollama model: automatic discovery from installed models"
+    fi
+    ;;
+  *)
+    echo "Unsupported PARALLAX_ENGINE '$ENGINE'. Choose 'llamacpp' or 'ollama'." >&2
+    exit 2
+    ;;
+esac
+
 if curl -fsS "http://127.0.0.1:8130/health" >/dev/null 2>&1; then
   echo "Reusing the PARALLAX desktop bridge on 127.0.0.1:8130."
 else
@@ -72,11 +151,12 @@ fi
 
 if curl -fsS "http://127.0.0.1:8123/health" >/dev/null 2>&1; then
   echo "Reusing the OpenJarvis API already listening on 127.0.0.1:8123."
+  echo "An existing API cannot switch engines live. Stop the process on port 8123 and restart to apply PARALLAX_ENGINE=$ENGINE."
 else
-  echo "Starting OpenJarvis API (llama.cpp at 127.0.0.1:8080)..."
+  echo "Starting OpenJarvis API with the $ENGINE inference backend..."
   (
     cd "$VENDOR"
-    uv run --no-sync jarvis serve --host 127.0.0.1 --port 8123 --engine llamacpp --agent orchestrator
+    uv run --no-sync jarvis serve --host 127.0.0.1 --port 8123 "${ENGINE_ARGS[@]}" --agent orchestrator
   ) &
   API_PID=$!
 

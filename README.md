@@ -14,7 +14,7 @@ The integration brings the upstream capabilities into PARALLAX:
 - **Memory and retrieval:** persistent local facts, document indexing, SQLite/FTS, and optional BM25, FAISS, ColBERT and PDF retrieval.
 - **Tools and MCP:** the upstream tool registry, calculator, web search, browser, file and knowledge tools, plus MCP client/server support.
 - **Skills and workflows:** skill catalog and import/sync support, recipes, workflows and scheduled agents.
-- **Models and engines:** model discovery, model routing and the supported inference engines, including llama.cpp.
+- **Models and engines:** model discovery, model routing and the supported inference engines, including llama.cpp and Ollama.
 - **Learning and evaluation:** routing policies, agent/skill optimizers, trace-driven learning, benchmarks and evaluation workflows.
 - **Telemetry:** local inference traces, performance statistics and hardware/energy metrics.
 - **Connectors and channels:** upstream connector, digest, and messaging/channel systems, with provider-specific setup where required.
@@ -28,10 +28,11 @@ The **SYSTEMS** control on the PARALLAX screen opens the official OpenJarvis web
 | PARALLAX | `http://127.0.0.1:4174` | Orb, main chat and voice |
 | OpenJarvis web console | `http://127.0.0.1:5175` | Official upstream management UI |
 | OpenJarvis API | `http://127.0.0.1:8123` | Agents, memory, tools, routing and telemetry |
-| llama.cpp | `http://127.0.0.1:8080` | Local model inference |
+| llama.cpp | `http://127.0.0.1:8080` | Local model inference when selected |
+| Ollama | `http://127.0.0.1:11434` | Alternate native local inference backend |
 | Qwen3-TTS | `http://127.0.0.1:7861` | PARALLAX V6 speech service |
 
-The main PARALLAX chat sends OpenAI-compatible chat requests to OpenJarvis `/v1/chat/completions`. OpenJarvis uses its `llamacpp` engine to call the existing local llama.cpp server. Your GGUF models remain managed by llama.cpp; this integration does not replace your models or switch inference to a cloud API.
+The main PARALLAX chat sends OpenAI-compatible chat requests to OpenJarvis `/v1/chat/completions`. OpenJarvis uses its `llamacpp` engine by default to call the existing local llama.cpp server. It can also use its native `ollama` engine against Ollama’s local API. Your models remain managed by whichever local runtime you choose; PARALLAX does not replace them or switch inference to a cloud API.
 
 Local inference is the default. Web search, browser access, connectors and messaging integrations can contact external services when those features are deliberately used and configured. External OpenJarvis analytics are disabled in the starter profile; local telemetry remains enabled.
 
@@ -41,7 +42,7 @@ Local inference is the default. Web search, browser access, connectors and messa
 - Git with submodule support
 - Node.js **22.22+** and npm **11.19+** for the upstream OpenJarvis frontend
 - [uv](https://docs.astral.sh/uv/)
-- A local llama.cpp `llama-server` exposing an OpenAI-compatible API at `127.0.0.1:8080`
+- Either a local llama.cpp `llama-server` at `127.0.0.1:8080` (default), or a running Ollama server at `127.0.0.1:11434` with at least one model already installed
 - The existing PARALLAX Qwen3-TTS environment for in-app speech
 
 OpenJarvis supports Python 3.10–3.13. The setup script installs and uses Python 3.12 in its own environment, separate from PARALLAX's voice environments.
@@ -175,3 +176,23 @@ OpenJarvis discovers the same capabilities through a local parallax-desktop MCP 
 The desktop bridge binds only to 127.0.0.1. Its HTTP interface accepts state-changing requests only from the local PARALLAX web origin. The MCP server exposes named operations only: no terminal, arbitrary shell, general-purpose command runner, file writing/deletion, package installation, or administrator access. File search matches names only and does not read file contents.
 
 npm run setup:openjarvis and npm run dev:full merge the desktop MCP server and tool names into ~/.openjarvis/config.toml. A one-time owner-readable backup is created before the config is changed. If OpenJarvis was already running before the desktop tools were added, restart its API so it reloads the MCP server configuration.
+
+
+### Choose llama.cpp or Ollama
+
+PARALLAX can use either local backend through OpenJarvis. The default remains llama.cpp, so existing GLM/llama.cpp setups continue to work unchanged.
+
+To use Ollama, add these settings to your local .env file:
+
+    PARALLAX_ENGINE=ollama
+    PARALLAX_OLLAMA_BASE_URL=http://127.0.0.1:11434
+    # Optional exact installed tag; blank means automatic discovery.
+    PARALLAX_OLLAMA_MODEL=
+
+Then start the usual stack with npm run dev:full. You can also launch directly with npm run dev:ollama, or explicitly return to llama.cpp with npm run dev:llamacpp.
+
+The launcher checks Ollama's local /api/tags endpoint before starting OpenJarvis. It does not download or pull models automatically. When PARALLAX_OLLAMA_MODEL is blank, OpenJarvis discovers an installed model. Set it to an exact tag from ollama list to pin one. Choose an Ollama model with native tool/function-calling support for desktop actions; models without tool support can still chat but may not be able to use PARALLAX's desktop tools.
+
+PARALLAX_OLLAMA_BASE_URL defaults to http://127.0.0.1:11434. An explicit engine.ollama.host in ~/.openjarvis/config.toml takes precedence over this environment setting. The llama.cpp host remains configured independently at engine.llamacpp.host.
+
+If an OpenJarvis API is already running on port 8123, stop it before changing PARALLAX_ENGINE; a running API cannot change its inference backend without restarting.

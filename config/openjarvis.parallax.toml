@@ -8,7 +8,7 @@ default = "llamacpp"
 host = "http://127.0.0.1:8080"
 
 [intelligence]
-# Empty means discover the model exposed by llama-server.
+# Empty means discover one from the selected local inference backend.
 default_model = ""
 temperature = 0.7
 max_tokens = 1200

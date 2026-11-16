@@ -12,7 +12,9 @@
     "voice-design:audition": "./.venv-voice-design/bin/python voice_design.py",
     "setup:openjarvis": "bash scripts/setup-openjarvis.sh",
     "dev:full": "bash scripts/dev-full.sh",
-    "desktop:bridge": "python3 scripts/desktop_mcp.py --http"
+    "desktop:bridge": "python3 scripts/desktop_mcp.py --http",
+    "dev:ollama": "PARALLAX_ENGINE=ollama bash scripts/dev-full.sh",
+    "dev:llamacpp": "PARALLAX_ENGINE=llamacpp bash scripts/dev-full.sh"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
