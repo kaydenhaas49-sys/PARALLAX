@@ -7,6 +7,10 @@ default = "llamacpp"
 [engine.llamacpp]
 host = "http://127.0.0.1:8080"
 
+[engine.ollama]
+# Empty uses OLLAMA_HOST (set by PARALLAX_OLLAMA_BASE_URL) or localhost:11434.
+host = ""
+
 [intelligence]
 # Empty means discover one from the selected local inference backend.
 default_model = ""
