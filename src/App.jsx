@@ -529,7 +529,7 @@ export default function App() {
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [connection, setConnection] = useState({ status: "connecting", model: "" });
-  const [model, setModel] = useState("glm");
+  const [model, setModel] = useState("local-model");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [voiceStatus, setVoiceStatus] = useState("unknown");
   const orbStage = useRef(null);
@@ -555,7 +555,10 @@ export default function App() {
           payload.data?.[0]?.id ||
           payload.models?.[0]?.name ||
           payload.models?.[0]?.model ||
-          "local-model";
+          payload.data?.[0]?.id ||
+          payload.models?.[0]?.name ||
+          payload.models?.[0]?.model;
+        if (!availableModel) throw new Error("OpenJarvis did not detect a model on the local inference server.");
         if (!active) return;
         setModel(availableModel);
         setConnection({ status: "online", model: availableModel });
@@ -665,14 +668,14 @@ export default function App() {
 
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(payload.error?.message || payload.message || ("GLM request failed (" + response.status + ")"));
+        throw new Error(payload.error?.message || payload.message || ("OpenJarvis request failed (" + response.status + ")"));
       }
       const rawContent = payload.choices?.[0]?.message?.content;
       const answer = Array.isArray(rawContent)
         ? rawContent.map((part) => typeof part === "string" ? part : (part.text || part.content || "")).join("")
         : rawContent;
       if (typeof answer !== "string" || !answer.trim()) {
-        throw new Error("GLM returned an empty response.");
+        throw new Error("OpenJarvis returned an empty response.");
       }
 
       setMessages((current) => [...current, { id: Date.now() + 1, role: "assistant", content: answer.trim() }]);
