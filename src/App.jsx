@@ -6,6 +6,31 @@ import { advancePet, createPetState } from "./petBrain.js";
 import { synthesizeSpeech, VOICE_OPTIONS } from "./voice.js";
 import { useAlwaysListening } from "./useAlwaysListening.js";
 
+const MODEL_PREFERENCE_KEY = "parallax.selectedModel";
+
+function readSavedModel() {
+  try {
+    return window.localStorage.getItem(MODEL_PREFERENCE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function getAvailableModelIds(payload) {
+  const entries = Array.isArray(payload?.data)
+    ? payload.data
+    : Array.isArray(payload?.models)
+      ? payload.models
+      : [];
+
+  return [...new Set(entries
+    .map((entry) => typeof entry === "string"
+      ? entry
+      : entry?.id || entry?.name || entry?.model)
+    .filter((id) => typeof id === "string" && id.trim())
+    .map((id) => id.trim()))];
+}
+
 const MODES = {
   standby: { speed: 0.28, energy: 0.34, colors: ["#173d55", "#42d6e7", "#e7fbff"] },
   curious: { speed: 0.42, energy: 0.48, colors: ["#17475b", "#69e1ec", "#f0fdff"] },
@@ -535,8 +560,9 @@ export default function App() {
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [connection, setConnection] = useState({ status: "connecting", model: "" });
+  const [modelOptions, setModelOptions] = useState([]);
   const configuredModel = String(import.meta.env.VITE_PARALLAX_MODEL || "").trim();
-  const [model, setModel] = useState(configuredModel || "local-model");
+  const [model, setModel] = useState(() => readSavedModel() || configuredModel || "local-model");
   const [selectedVoice, setSelectedVoice] = useState("parallax-v6");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [voiceStatus, setVoiceStatus] = useState("unknown");
@@ -572,18 +598,19 @@ export default function App() {
         const response = await fetch("/api/jarvis/v1/models");
         if (!response.ok) throw new Error("OpenJarvis model endpoint returned " + response.status);
         const payload = await response.json();
-        const discoveredModel =
-          payload.data?.[0]?.id ||
-          payload.models?.[0]?.name ||
-          payload.models?.[0]?.model;
-        // The backend's configured model must win over the first discovered model.
-        // Otherwise an installed model earlier in Ollama's list can override the
-        // explicit PARALLAX_OLLAMA_MODEL setting on every chat request.
-        const availableModel = configuredModel || discoveredModel;
-        if (!availableModel) throw new Error("OpenJarvis did not detect a model on the local inference server.");
+        const availableModels = getAvailableModelIds(payload);
+        if (availableModels.length === 0) {
+          throw new Error("OpenJarvis did not detect any chat models on the local inference server.");
+        }
         if (!active) return;
-        setModel(availableModel);
-        setConnection({ status: "online", model: availableModel });
+
+        setModelOptions(availableModels);
+        const savedModel = readSavedModel();
+        const preferredModel = [savedModel, configuredModel, model]
+          .find((candidate) => candidate && availableModels.includes(candidate));
+        const selectedModel = preferredModel || availableModels[0];
+        setModel(selectedModel);
+        setConnection({ status: "online", model: selectedModel });
       } catch {
         if (!active) return;
         setConnection({ status: "offline", model: "" });
@@ -739,6 +766,19 @@ export default function App() {
 
   sendAssistantMessageRef.current = sendAssistantMessage;
 
+  const handleModelChange = (event) => {
+    const nextModel = event.target.value;
+    if (!modelOptions.includes(nextModel)) return;
+
+    setModel(nextModel);
+    setConnection((current) => ({ ...current, model: nextModel }));
+    try {
+      window.localStorage.setItem(MODEL_PREFERENCE_KEY, nextModel);
+    } catch {
+      // The selected model still applies for this session if storage is unavailable.
+    }
+  };
+
   const sendMessage = (event) => {
     event.preventDefault();
     const text = draft.trim();
@@ -862,6 +902,29 @@ export default function App() {
                 : micStatus === "paused" ? "MIC LIVE · RESPONSE IN PROGRESS"
                 : micStatus === "starting" ? "REQUESTING MICROPHONE"
                 : "MIC UNAVAILABLE"}
+            </span>
+          </div>
+          <div className="model-picker">
+            <label htmlFor="parallax-model">MODEL</label>
+            <select
+              id="parallax-model"
+              className="model-select"
+              value={model}
+              onChange={handleModelChange}
+              disabled={connection.status !== "online" || isSending || modelOptions.length === 0}
+              aria-label="Choose PARALLAX's local inference model"
+              title="Choose which installed local model handles the next message"
+            >
+              {modelOptions.length > 0
+                ? modelOptions.map((modelId) => (
+                    <option key={modelId} value={modelId}>{modelId}</option>
+                  ))
+                : <option value={model}>{model}</option>}
+            </select>
+            <span className="model-picker-count">
+              {modelOptions.length > 0
+                ? modelOptions.length + (modelOptions.length === 1 ? " MODEL" : " MODELS")
+                : connection.status === "connecting" ? "LOADING" : "UNAVAILABLE"}
             </span>
           </div>
           <div className="composer-input-row">
