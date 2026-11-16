@@ -554,9 +554,6 @@ export default function App() {
         const availableModel =
           payload.data?.[0]?.id ||
           payload.models?.[0]?.name ||
-          payload.models?.[0]?.model ||
-          payload.data?.[0]?.id ||
-          payload.models?.[0]?.name ||
           payload.models?.[0]?.model;
         if (!availableModel) throw new Error("OpenJarvis did not detect a model on the local inference server.");
         if (!active) return;
