@@ -31,6 +31,23 @@ if [[ ! -f "$OPENJARVIS_HOME/config.toml" ]]; then
   install -m 600 "$ROOT/config/openjarvis.parallax.toml" "$OPENJARVIS_HOME/config.toml"
 fi
 
+# Add PARALLAX's local speech defaults only when no speech section exists.
+# Existing user-selected speech settings are left untouched.
+if ! grep -q '^\\[speech\\]' "$OPENJARVIS_HOME/config.toml"; then
+  cat >> "$OPENJARVIS_HOME/config.toml" <<'TOML'
+
+[speech]
+backend = "faster-whisper"
+model = "base"
+language = "en"
+device = "cpu"
+compute_type = "int8"
+tts_backend = "kokoro"
+voice_id = "bm_george"
+voice_speed = 1.0
+TOML
+fi
+
 if curl -fsS "http://127.0.0.1:8123/health" >/dev/null 2>&1; then
   echo "Reusing the OpenJarvis API already listening on 127.0.0.1:8123."
 else
