@@ -80,7 +80,25 @@ The starter profile points OpenJarvis at llama.cpp on port 8080, runs its API on
 
 For safety, the starter tool allow-list excludes shell execution, arbitrary code execution and file writing. Those capabilities exist upstream but are not enabled automatically. Review OpenJarvis's permission controls and the impact of each tool before enabling them.
 
-The setup installs the server, desktop/speech, browser, BM25/PDF memory, GPU metrics and learning extras. Other provider-specific connectors, channels and alternative inference engines may require additional optional packages, credentials or services; they are not silently enabled.
+The setup installs the server, desktop, browser, BM25/PDF memory, GPU metrics, learning, Faster-Whisper speech recognition and Kokoro text-to-speech extras. Other provider-specific connectors, channels and alternative inference engines may require additional optional packages, credentials or services; they are not silently enabled.
+
+### Hands-free voice
+
+PARALLAX automatically requests microphone access when its page opens. There is no in-app button to start listening. The mic status stays visible in the composer. The browser still requires the user to grant microphone permission; revoke it through the browser's site permissions or the operating system's microphone privacy settings.
+
+The microphone stream is analyzed locally for speech activity. Audio is held in memory only long enough to make a short utterance clip; Whisper transcribes that clip through the local OpenJarvis API. The clip is not saved as a recording or sent to a cloud transcription provider. OpenJarvis uses a temporary file during Faster-Whisper processing and removes it after transcription.
+
+The wake phrase is **“Parallax”** (also accepts “Hey Parallax”). PARALLAX only sends a command to the chat agent after that wake phrase; other nearby speech is transcribed locally for wake-word matching and then discarded. After saying only the wake phrase, speak the command within about nine seconds. Voice activity detection is a lightweight energy threshold, not a dedicated wake-word model, so quiet speech or noisy rooms can affect detection.
+
+The starter profile runs Faster-Whisper `base` on the CPU with `int8` to avoid competing with llama.cpp for GPU memory. The model downloads the first time it starts. Kokoro voices are selected from the voice menu in the PARALLAX composer; PARALLAX V6 remains available through the existing Qwen3-TTS service.
+
+Kokoro English voices need the system `espeak-ng` package. On Arch/Omarchy install it with:
+
+```bash
+sudo pacman -S espeak-ng
+```
+
+The available Kokoro English choices include George, Lewis, Emma, Isabella, Heart, Bella, Nicole, Sarah, Sky, Adam and Michael. OpenJarvis also supports other Kokoro languages when matching language resources are installed.
 
 ## Running PARALLAX without the full launcher
 

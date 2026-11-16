@@ -362,3 +362,36 @@ body {
   .workspace-overlay { padding: 0; }
   .workspace-window { width: 100%; height: 100%; border-radius: 0; border: 0; }
 }
+
+
+/* Always-on local voice status and selectable local voices */
+.composer-meta { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 14px; }
+.connection-meta { display:inline-flex; align-items:center; gap:7px; min-width:0; }
+.mic-indicator { display:inline-flex; align-items:center; gap:6px; color:rgba(109,224,192,.88); white-space:nowrap; font-size:9px; font-weight:700; letter-spacing:.1em; }
+.mic-indicator svg { color:#60dfbf; filter:drop-shadow(0 0 5px rgba(96,223,191,.45)); }
+.mic-indicator.mic-listening svg, .mic-indicator.mic-armed svg { animation:mic-pulse 1.8s ease-in-out infinite; }
+.mic-indicator.mic-armed { color:#b9a8ff; }
+.mic-indicator.mic-armed svg { color:#b9a8ff; }
+.mic-indicator.mic-transcribing { color:#86c8ff; }
+.mic-indicator.mic-transcribing svg { color:#86c8ff; }
+.mic-indicator.mic-paused { color:rgba(145,184,196,.72); }
+.mic-indicator.mic-paused svg { color:rgba(145,184,196,.72); }
+.mic-indicator.mic-starting { color:#e3bd7c; }
+.mic-indicator.mic-starting svg { color:#e3bd7c; }
+.mic-indicator.mic-error { color:#f08c96; }
+.mic-indicator.mic-error svg { color:#f08c96; }
+@keyframes mic-pulse { 0%,100% { opacity:.7; } 50% { opacity:1; filter:drop-shadow(0 0 8px currentColor); } }
+.voice-label { flex:0 0 auto; color:rgba(145,184,196,.45); font-size:8px; font-weight:700; letter-spacing:.12em; }
+.composer select.voice-select {
+  width:min(190px,38vw); min-width:112px; max-width:190px; flex:0 1 auto;
+  padding:7px 26px 7px 9px; border:1px solid rgba(119,211,227,.15);
+  border-radius:9px; outline:none; background:rgba(7,19,28,.92);
+  color:rgba(204,235,242,.82); font:inherit; font-size:10px; cursor:pointer;
+}
+.composer select.voice-select:focus { border-color:rgba(119,211,227,.42); }
+.composer select.voice-select option { background:#08121a; color:#e5f8fb; }
+@media (max-width:640px) {
+  .composer-meta { align-items:flex-start; flex-direction:column; gap:6px; }
+  .composer select.voice-select { width:118px; min-width:0; font-size:9px; }
+  .voice-label { display:none; }
+}
