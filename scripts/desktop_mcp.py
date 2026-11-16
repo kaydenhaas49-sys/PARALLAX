@@ -15,7 +15,7 @@ import time
 import unicodedata
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
 
 HOME = Path.home()
 DESKTOP_DIRS = [
@@ -100,6 +100,46 @@ def steam_games() -> list[dict]:
                               "kind": "steam", "categories": ["Game", "Steam"], "_appid": app_id.group(1)})
     return games
 
+def heroic_games() -> list[dict]:
+    """Read installed Epic game metadata used by Heroic/Legendary; never reads credentials."""
+    installed_files = [
+        HOME / ".config/legendary/installed.json",
+        HOME / ".var/app/com.heroicgameslauncher.hgl/config/legendary/installed.json",
+        HOME / ".config/heroic/legendaryConfig/legendary/manifests/installed.json",
+        HOME / ".var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/manifests/installed.json",
+    ]
+    games, seen = [], set()
+    for installed_file in installed_files:
+        if not installed_file.is_file():
+            continue
+        try:
+            data = json.loads(installed_file.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        for app_name, entry in data.items():
+            if not isinstance(entry, dict):
+                continue
+            install_path = entry.get("install_path")
+            if not install_path or not Path(str(install_path)).is_dir():
+                continue
+            epic_app_name = str(entry.get("app_name") or app_name)
+            title = str(entry.get("title") or entry.get("app_title") or epic_app_name).strip()
+            key = normal(title)
+            if not title or not key or key in seen:
+                continue
+            seen.add(key)
+            games.append({
+                "id": "heroic:" + epic_app_name,
+                "name": title,
+                "kind": "heroic",
+                "categories": ["Game", "Heroic", "Epic"],
+                "_app_name": epic_app_name,
+                "_install_path": str(install_path),
+            })
+    return games
+
 def application_entries() -> list[dict]:
     items, seen = [], set()
     for root in DESKTOP_DIRS:
@@ -122,7 +162,7 @@ def application_entries() -> list[dict]:
                         items.append(item)
             if count > 2500:
                 break
-    for game in steam_games():
+    for game in steam_games() + heroic_games():
         key = normal(game["name"])
         if key and key not in seen:
             seen.add(key)
@@ -176,6 +216,12 @@ def launch_application(application: str) -> dict:
             if not steam:
                 return {"ok": False, "error": "The Steam game is installed, but the steam launcher is not on PATH."}
             argv = [steam, "steam://rungameid/" + item["_appid"]]
+        elif item["kind"] == "heroic":
+            opener = shutil.which("xdg-open")
+            if not opener:
+                return {"ok": False, "error": "xdg-open was not found; cannot send the Heroic game-launch link."}
+            launch_uri = "heroic://launch?" + urlencode({"appName": item["_app_name"], "runner": "legendary"})
+            argv = [opener, launch_uri]
         else:
             argv = desktop_argv(item)
         process = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
@@ -316,8 +362,8 @@ def search_files(query: str, scope: str = "home") -> dict:
     return {"ok": True, "items": found, "visited": visited, "limited": False}
 
 TOOLS = [
-    {"name": "parallax_list_applications", "description": "List installed desktop applications and installed Steam games. Read-only; use this before ambiguous app launches.", "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}, "annotations": {"readOnlyHint": True}},
-    {"name": "parallax_launch_application", "description": "Launch one already-installed desktop application or Steam game by name. Does not install anything. Ask the user to choose if multiple matches exist.", "inputSchema": {"type": "object", "properties": {"application": {"type": "string", "maxLength": 100}}, "required": ["application"], "additionalProperties": False}},
+    {"name": "parallax_list_applications", "description": "List installed desktop applications, Steam games, and Heroic-managed Epic games. Read-only; use this before ambiguous app launches.", "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}, "annotations": {"readOnlyHint": True}},
+    {"name": "parallax_launch_application", "description": "Launch one already-installed desktop application, Steam game, or Heroic-managed Epic game by name. Does not install anything. Ask the user to choose if multiple matches exist.", "inputSchema": {"type": "object", "properties": {"application": {"type": "string", "maxLength": 100}}, "required": ["application"], "additionalProperties": False}},
     {"name": "parallax_list_windows", "description": "List open Hyprland windows with title, class, workspace and opaque address. Read-only.", "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}, "annotations": {"readOnlyHint": True}},
     {"name": "parallax_focus_window", "description": "Focus an open Hyprland window. Address must come from parallax_list_windows.", "inputSchema": {"type": "object", "properties": {"address": {"type": "string"}}, "required": ["address"], "additionalProperties": False}},
     {"name": "parallax_get_system_status", "description": "Read local Linux distro, kernel, CPU core count, memory use, root disk free space and load average. Read-only.", "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}, "annotations": {"readOnlyHint": True}},

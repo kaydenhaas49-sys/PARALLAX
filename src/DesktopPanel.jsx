@@ -102,7 +102,7 @@ export default function DesktopPanel({ onClose }) {
               {filteredApps.length ? filteredApps.map((app) => (
                 <button type="button" className="desktop-app-row" key={app.id} disabled={!!busy} onClick={() => void runAction(app.id, "/launch", { name: app.name })}>
                   <span className="desktop-app-name">{app.name}</span>
-                  <span className="desktop-app-kind">{app.kind === "steam" ? "STEAM" : "APP"}</span>
+                  <span className="desktop-app-kind">{app.kind === "steam" ? "STEAM" : app.kind === "heroic" ? "HEROIC" : "APP"}</span>
                 </button>
               )) : <p className="desktop-empty">No matching installed applications.</p>}
             </div>
