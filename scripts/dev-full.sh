@@ -33,7 +33,7 @@ fi
 
 # Add PARALLAX's local speech defaults only when no speech section exists.
 # Existing user-selected speech settings are left untouched.
-if ! grep -q '^\\[speech\\]' "$OPENJARVIS_HOME/config.toml"; then
+if ! grep -Fqx '[speech]' "$OPENJARVIS_HOME/config.toml"; then
   cat >> "$OPENJARVIS_HOME/config.toml" <<'TOML'
 
 [speech]
