@@ -535,7 +535,8 @@ export default function App() {
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [connection, setConnection] = useState({ status: "connecting", model: "" });
-  const [model, setModel] = useState("local-model");
+  const configuredModel = String(import.meta.env.VITE_PARALLAX_MODEL || "").trim();
+  const [model, setModel] = useState(configuredModel || "local-model");
   const [selectedVoice, setSelectedVoice] = useState("parallax-v6");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [voiceStatus, setVoiceStatus] = useState("unknown");
@@ -571,10 +572,14 @@ export default function App() {
         const response = await fetch("/api/jarvis/v1/models");
         if (!response.ok) throw new Error("OpenJarvis model endpoint returned " + response.status);
         const payload = await response.json();
-        const availableModel =
+        const discoveredModel =
           payload.data?.[0]?.id ||
           payload.models?.[0]?.name ||
           payload.models?.[0]?.model;
+        // The backend's configured model must win over the first discovered model.
+        // Otherwise an installed model earlier in Ollama's list can override the
+        // explicit PARALLAX_OLLAMA_MODEL setting on every chat request.
+        const availableModel = configuredModel || discoveredModel;
         if (!availableModel) throw new Error("OpenJarvis did not detect a model on the local inference server.");
         if (!active) return;
         setModel(availableModel);
